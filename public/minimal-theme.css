@@ -1,0 +1,563 @@
+:root {
+  --paper: #f7f8f6;
+  --ink: #202322;
+  --card: #ffffff;
+  --muted: #66706b;
+  --line: #dfe5df;
+  --red: #e85f52;
+  --purple: #4f64d8;
+  --yellow: #f3b84b;
+  --green: #2e9d78;
+  --blue: #3d76d8;
+  --shadow: 0 10px 28px rgba(32, 35, 34, 0.08);
+  --shadow-sm: 0 4px 14px rgba(32, 35, 34, 0.08);
+}
+
+body {
+  background: #eef2ee;
+  background-image: none;
+  color: var(--ink);
+}
+
+.pixel {
+  font-family: inherit;
+  letter-spacing: 0;
+}
+
+.phone {
+  background: var(--paper);
+}
+
+@media (min-width: 460px) {
+  .phone {
+    width: 402px;
+    height: min(832px, 100dvh - 24px);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 22px 70px rgba(32, 35, 34, 0.16);
+  }
+}
+
+.screen {
+  padding: 18px;
+  gap: 12px;
+}
+
+.screen.active {
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.badge,
+.chip,
+.btn,
+.card,
+.setupCard,
+.field,
+.hintCard,
+.avatarSlot,
+.gAv,
+.locationStatus,
+.voiceInsight,
+.micBig,
+.micBtn,
+.mode,
+.ctrlSide,
+.navMini,
+.winCard,
+.soundGate {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.topbar {
+  min-height: 34px;
+}
+
+.badge {
+  padding: 6px 9px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.badge.red,
+.badge.purple,
+.badge.yellow {
+  background: #fff;
+  color: var(--muted);
+}
+
+.dots,
+.sub,
+.hintRow,
+.quickTagLabel {
+  color: var(--muted);
+}
+
+.titleMark {
+  color: var(--blue);
+}
+
+.lead {
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.sub {
+  font-weight: 600;
+}
+
+.coin {
+  min-height: 168px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff 0%, #eff6f1 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.coin .emoji {
+  font-size: 54px;
+  filter: none;
+}
+
+.slogan {
+  border: 1px solid #d7e8df;
+  border-radius: 8px;
+  background: #edf8f2;
+  color: #265a47;
+  font-weight: 750;
+}
+
+.chip {
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip.on {
+  background: #202322;
+  border-color: #202322;
+  color: #fff;
+}
+
+.homeChips {
+  gap: 7px;
+}
+
+.btn,
+.btn.red,
+.btn.alt,
+.btn.ghost {
+  border-color: transparent;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.btn.alt {
+  background: var(--green);
+}
+
+.btn.ghost {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn:active,
+.mode:active,
+.coin:active,
+.locBtn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.setupCard,
+.card,
+.profileCard {
+  background: #fff;
+}
+
+.avatarSlot,
+.gAv,
+.playerPill {
+  background: #f2f5f2;
+}
+
+.avatarGallery {
+  scrollbar-width: none;
+}
+
+.avatarGallery::-webkit-scrollbar {
+  display: none;
+}
+
+.field {
+  background: #f8faf8;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.field:focus {
+  background: #fff;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(46, 157, 120, 0.14);
+}
+
+.hintCard {
+  background: #f8faf8;
+  color: var(--muted);
+}
+
+.locationStatus,
+.locationStatus[data-state="loading"],
+.locationStatus[data-state="error"],
+.voiceInsight,
+.voiceInsight[data-state="loading"] {
+  background: #fff;
+  color: var(--ink);
+}
+
+.locationStatus[data-state="gps"] {
+  background: #eef8f4;
+  border-color: #b9dfd1;
+  color: #1e614c;
+}
+
+.locationStatus::before {
+  content: "";
+  display: none;
+}
+
+.inputActionsTop .micBig {
+  min-height: 76px;
+  border-radius: 12px;
+  font-size: 18px;
+  background: #202322;
+  color: #fff;
+  box-shadow: none;
+}
+
+.voicePrimary {
+  background: #202322;
+  color: #fff;
+}
+
+.quickTags {
+  gap: 8px;
+}
+
+.quickTagRow {
+  gap: 7px;
+}
+
+.quickTagRow .chip {
+  padding: 7px 5px;
+  border-color: #dfe5df;
+}
+
+.modeScreen {
+  gap: 16px;
+}
+
+.modeList {
+  gap: 10px;
+}
+
+.mode {
+  background: #fff;
+  color: var(--ink);
+  padding: 14px;
+  border-left-width: 5px;
+}
+
+.mode.boss,
+.mode.ai,
+.mode.myst {
+  background: #fff;
+  color: var(--ink);
+}
+
+.mode.boss {
+  border-left-color: var(--red);
+}
+
+.mode.ai {
+  border-left-color: var(--blue);
+}
+
+.mode.myst {
+  border-left-color: var(--yellow);
+}
+
+.mode .ic {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8faf8;
+  font-size: 24px;
+}
+
+.mode .nm {
+  font-size: 17px;
+}
+
+.mode .ds,
+.mode.boss .ds,
+.mode.ai .ds,
+.mode.myst .ds,
+.mode .tagline,
+.mode.boss .tagline,
+.mode.ai .tagline,
+.mode.myst .tagline {
+  color: var(--muted);
+}
+
+.mode.sel {
+  box-shadow: 0 0 0 3px rgba(61, 118, 216, 0.12);
+}
+
+.mode.sel::before {
+  border-color: rgba(61, 118, 216, 0.18);
+}
+
+.mode.sel::after {
+  background: var(--blue);
+  color: #fff;
+  border-radius: 999px;
+}
+
+.skipZone {
+  padding: 12px 0 24px;
+}
+
+.skipSmash {
+  width: min(230px, 72vw);
+  height: 62px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 20px;
+  text-shadow: none;
+}
+
+.skipSmash::before,
+.skipSmash::after {
+  display: none;
+}
+
+.skipSmash .label {
+  transform: none;
+}
+
+.counter {
+  color: var(--muted);
+}
+
+.pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d7ddd8;
+  border: 0;
+}
+
+.pip.spent {
+  background: #202322;
+  opacity: 0.22;
+}
+
+.pip.on {
+  background: var(--blue);
+}
+
+.roundSlogan {
+  border-radius: 8px;
+  border: 1px solid #d7e8df;
+  background: #edf8f2;
+  color: #265a47;
+  box-shadow: none;
+}
+
+.deckWrap {
+  padding: 6px 0 0;
+}
+
+.deck {
+  filter: none;
+}
+
+.gcard {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgba(32, 35, 34, 0.12);
+}
+
+.gcard .art:not(.photo) {
+  background: #f2f5f2 !important;
+}
+
+.gcard .art.photo {
+  background-color: #f2f5f2;
+  filter: none;
+  text-shadow: none;
+}
+
+.gcard .info {
+  background: #fff !important;
+  color: var(--ink) !important;
+}
+
+.gcard h2,
+.gcard h3,
+.gameSlogan {
+  color: var(--ink) !important;
+}
+
+.gcard .cnum,
+.gcard p,
+.gcard .reason {
+  color: var(--muted) !important;
+}
+
+.meta,
+.miniMeta {
+  background: #f3f6f3 !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--line);
+}
+
+.deckControls {
+  gap: 10px;
+  margin: 2px -8px -10px;
+}
+
+.ctrlSide {
+  width: 88px;
+  height: 52px;
+  border: 0;
+}
+
+.ctrlSide.no {
+  background: #f4eeee;
+  color: #9a4038;
+}
+
+.ctrlSide.pick {
+  background: #edf8f4;
+  color: #1e614c;
+}
+
+.pipeBtn {
+  width: 112px;
+  height: 52px;
+  border-radius: 10px;
+  background: #f7f8f6;
+  box-shadow: inset 0 0 0 1px var(--line);
+  justify-content: center;
+}
+
+.pipeBtn .rim {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.pipeBtn .body {
+  display: none;
+}
+
+.pipeBtn .plabel {
+  font-size: 13px;
+  color: var(--muted);
+  text-shadow: none;
+}
+
+.win {
+  background: rgba(32, 35, 34, 0.35);
+  backdrop-filter: blur(12px);
+}
+
+.winCard {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 80px rgba(32, 35, 34, 0.22);
+}
+
+.winCard .face {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f2f5f2;
+}
+
+.winCard .cg {
+  color: var(--green);
+  text-shadow: none;
+}
+
+.tag {
+  color: var(--muted);
+}
+
+.soundGate {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.soundGate.loading {
+  background: #fff;
+}
+
+.toast {
+  border-radius: 999px;
+  background: rgba(32, 35, 34, 0.9);
+  color: #fff;
+}
+
+.conf {
+  border-radius: 999px;
+}
+
+@media (max-height: 760px) {
+  .screen {
+    gap: 9px;
+    padding: 14px;
+  }
+
+  .coin {
+    min-height: 130px;
+  }
+
+  .inputActionsTop .micBig {
+    min-height: 66px;
+  }
+
+  .skipZone {
+    padding-bottom: 12px;
+  }
+}

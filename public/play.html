@@ -1,0 +1,2381 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>不做选择 Lite · 简洁版</title>
+    <style>
+      :root {
+        --paper: #f3ecdd; --ink: #1a1714; --red: #ff5a4d; --purple: #6c5ce7;
+        --yellow: #f6c518; --green: #28c76f; --blue: #3d6bff; --card: #fffdf6;
+        --pipe: #3bb24a; --pipe-d: #1f8a2e; --pipe-l: #7fe08a;
+        --shadow: 5px 5px 0 var(--ink); --shadow-sm: 3px 3px 0 var(--ink);
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      html, body { height: 100%; overflow: hidden; }
+      body {
+        background: #e7ddc8;
+        background-image: radial-gradient(circle at 1px 1px, rgba(26,23,20,.06) 1px, transparent 0);
+        background-size: 22px 22px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--ink);
+        display: grid; place-items: center;
+      }
+      .pixel { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; letter-spacing: .5px; }
+      .phone { position: relative; width: min(412px, 100vw); height: 100dvh; background: var(--paper); overflow: hidden; display: flex; flex-direction: column; }
+      @media (min-width: 460px) { .phone { width: 400px; height: min(840px, 100dvh - 16px); border: 3px solid var(--ink); border-radius: 30px; box-shadow: var(--shadow); } }
+
+      .screens { position: relative; flex: 1; min-height: 0; }
+      /* 每屏一屏装下：overflow hidden，用 flex 自适应 */
+      .screen { position: absolute; inset: 0; padding: 14px 16px; display: none; flex-direction: column; gap: 9px; overflow: hidden; }
+      .screen.active { display: flex; animation: pop .26s ease; }
+      @keyframes pop { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+      .topbar { display: flex; align-items: center; justify-content: space-between; flex: none; }
+      .badge { font-size: 9px; padding: 5px 8px 4px; border: 2px solid var(--ink); border-radius: 7px; background: var(--card); box-shadow: var(--shadow-sm); }
+      .badge.red { background: var(--red); color: #fff; } .badge.purple { background: var(--purple); color: #fff; } .badge.yellow { background: var(--yellow); }
+      .dots { font-size: 9px; opacity: .6; }
+      .back { font-size: 12px; font-weight: 800; background: none; border: none; cursor: pointer; color: var(--ink); }
+      .lead { font-weight: 900; line-height: 1.08; }
+      .sub { font-size: 13px; font-weight: 700; color: #6b6253; line-height: 1.5; }
+      .spacer { flex: 1 1 auto; min-height: 0; }
+      .card { background: var(--card); border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; }
+      .card.flat { box-shadow: var(--shadow-sm); }
+      .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; padding: 7px 11px; border: 2px solid var(--ink); border-radius: 10px; background: var(--card); cursor: pointer; user-select: none; }
+      .chip.on { background: var(--ink); color: var(--paper); }
+      .chipwrap { display: flex; flex-wrap: wrap; gap: 7px; }
+      .btn { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 900; font-size: 15px; padding: 13px; width: 100%; border: 3px solid var(--ink); border-radius: 13px; background: var(--ink); color: var(--paper); box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .08s; flex: none; }
+      .btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+      .btn.alt { background: var(--yellow); color: var(--ink); } .btn.red { background: var(--red); color: #fff; } .btn.ghost { background: var(--card); color: var(--ink); }
+
+      /* WELCOME / SETUP */
+      .setupCard { background: var(--card); border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); padding: 12px; display: flex; flex-direction: column; gap: 9px; flex: none; }
+      .avatarRow { display: flex; gap: 12px; align-items: center; }
+      .avatarSlot { position: relative; flex: none; width: 74px; height: 74px; border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); display: grid; place-items: center; cursor: pointer; overflow: hidden; box-shadow: var(--shadow-sm); }
+      .avatarSlot canvas, .avatarSlot .avatarPic { width: 100%; height: 100%; image-rendering: pixelated; display: none; object-fit: cover; }
+      .avatarSlot.set canvas { display: block; }
+      .avatarSlot.pic .avatarPic { display: block; }
+      .avatarSlot.set .avatarEmoji, .avatarSlot.pic .avatarEmoji { display: none; }
+      .avatarSlot.loading::before { content: ""; position: absolute; inset: 0; background: rgba(26,23,20,.45); z-index: 2; }
+      .avatarSlot.loading::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 4px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; z-index: 3; }
+      .avatarEmoji { font-size: 40px; line-height: 1; }
+      .avatarGallery { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 4px; }
+      .gAv { flex: none; width: 46px; height: 46px; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; display: grid; place-items: center; font-size: 26px; background: var(--paper); cursor: pointer; box-shadow: var(--shadow-sm); padding: 0; }
+      .gAv img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+      .gAv.on { background: var(--yellow); outline: 3px solid var(--yellow); outline-offset: -3px; }
+      .infoCol { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+      .field { width: 100%; border: 2px solid var(--ink); border-radius: 10px; padding: 9px 11px; font-size: 14px; font-weight: 700; background: var(--paper); font-family: inherit; color: var(--ink); }
+      .field::placeholder { color: #a59c86; font-weight: 600; }
+      .field:focus { outline: none; background: #fff; box-shadow: var(--shadow-sm); }
+      textarea.field { resize: none; height: 60px; line-height: 1.45; flex: none; }
+      .chipwrap.small .chip { font-size: 11.5px; padding: 5px 9px; }
+      .homeChips { display: flex; gap: 8px; }
+      .homeChips .chip { flex: 1; justify-content: center; white-space: nowrap; padding: 9px 4px; }
+      .hintRow { font-size: 9.5px; color: #8a8170; }
+      .locBtn { width: 100%; font-weight: 900; font-size: 15px; padding: 13px; border: 3px solid var(--ink); border-radius: 13px; background: var(--yellow); color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; flex: none; transition: transform .08s; }
+      .locBtn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+      .locBtn.granted { background: var(--green); color: #fff; }
+      .btn[data-locked] { opacity: .42; }
+      .btn.big { font-size: 18px; padding: 16px; }
+      .btn.huge { font-size: 20px; padding: 20px; border-radius: 16px; }
+      /* 配置页排版放松：内容均匀铺满，按钮在底 */
+      .configScreen { gap: 13px; justify-content: space-between; }
+      .configScreen .setupCard, .configScreen .profileCard { padding: 14px; }
+      .configScreen .profileCard { gap: 12px; }
+      .configScreen .pRow > label { width: 48px; }
+      /* 选择页语音输入 */
+      .inputActions { display: flex; gap: 9px; flex: none; }
+      .inputActions .micBig { flex: 1; font-size: 13px; padding: 12px; }
+      .inputActionsTop { display: block; }
+      .inputActionsTop .micBig { min-height: 86px; width: 100%; border-radius: 18px; font-size: 20px; line-height: 1.18; }
+      .inputActionsTop .voicePrimary { background: var(--yellow); color: var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+      .voiceInsight { flex: none; display: flex; flex-direction: column; gap: 5px; padding: 9px 11px; border: 3px solid var(--ink); border-radius: 14px; background: #fffdf6; box-shadow: var(--shadow-sm); font-size: 12px; font-weight: 900; line-height: 1.24; color: var(--ink); }
+      .voiceInsight[hidden] { display: none !important; }
+      .voiceInsight[data-state="loading"] { background: #fff7df; }
+      .voiceInsightRow { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 7px; align-items: start; min-width: 0; }
+      .voiceInsightLabel { color: #8a8170; white-space: nowrap; }
+      .voiceInsightValue { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .voiceInsightValue.wrap { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+      .locationStatus { flex: none; min-height: 46px; max-height: 64px; display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 11px; background: #fff7df; box-shadow: 3px 3px 0 var(--ink); font-size: 11.5px; font-weight: 900; line-height: 1.18; color: var(--ink); overflow: hidden; }
+      .locationStatus::before { content: "📍"; flex: none; font-size: 15px; line-height: 1.05; }
+      .locationStatus span { display: flex; flex-direction: column; gap: 2px; min-width: 0; white-space: normal; overflow: hidden; }
+      .locationStatus strong { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font: inherit; }
+      .locationStatus small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 10px; font-weight: 850; opacity: .86; line-height: 1.18; }
+      .locationStatus[data-state="gps"] { background: var(--green); color: #fff; }
+      .locationStatus[data-state="loading"] { background: var(--yellow); }
+      .locationStatus[data-state="error"] { background: #fffdf6; color: #6b6253; }
+      .quickTags { flex: none; display: flex; flex-direction: column; gap: 6px; }
+      .quickTagRow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .quickTagLabel { flex: none; width: 35px; font-size: 11px; font-weight: 900; color: #6b6253; }
+      .quickTagRow .chip { flex: 1; min-width: 0; justify-content: center; font-size: 11.5px; padding: 6px 4px; white-space: nowrap; }
+      .thumbRow { display: flex; gap: 6px; flex-wrap: wrap; flex: none; }
+      .thumbRow:empty { display: none; }
+      .thumb { width: 46px; height: 46px; border: 2px solid var(--ink); border-radius: 8px; object-fit: cover; box-shadow: var(--shadow-sm); }
+      /* 配置页结构化快选 */
+      .hintCard { font-size: 11.5px; font-weight: 700; padding: 9px 12px; background: #fff7df; border: 2px dashed var(--ink); border-radius: 11px; color: #4a4226; flex: none; }
+      .profileCard { gap: 9px; padding: 12px; flex: none; }
+      .pRow { display: flex; align-items: center; gap: 10px; }
+      .pRow > label { width: 44px; flex: none; font-size: 13px; font-weight: 850; }
+      .segChips { display: flex; gap: 6px; flex-wrap: wrap; }
+      .segChips .chip { font-size: 12.5px; padding: 6px 10px; }
+      .sel { flex: 1; min-width: 0; appearance: none; -webkit-appearance: none; cursor: pointer; background: var(--paper) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' fill='none' stroke='%231a1714' stroke-width='2'/></svg>") no-repeat right 11px center; padding-right: 30px; }
+
+      /* GAME / VOICE */
+      .voiceRow { display: flex; gap: 8px; align-items: stretch; flex: none; }
+      .voiceRow .field { flex: 1; }
+      .micBtn { flex: none; width: 50px; border: 3px solid var(--ink); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-sm); font-size: 20px; cursor: pointer; }
+      .micBtn.rec, .micBig.rec { background: var(--red); color: #fff; animation: pulse .8s infinite; }
+      @keyframes pulse { 50% { opacity: .55; } }
+      .gameHero { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 9px; padding-top: 2px; }
+      .voiceBox { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+      textarea.field.bigInput { flex: none; height: clamp(108px, 16dvh, 148px); min-height: clamp(108px, 16dvh, 148px); font-size: 15.5px; line-height: 1.48; resize: none; }
+      .micBig { flex: none; font-weight: 900; font-size: 14px; padding: 13px; border: 3px solid var(--ink); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-sm); cursor: pointer; }
+      @media (max-height: 760px) {
+        textarea.field.bigInput { height: clamp(92px, 14dvh, 122px); min-height: clamp(92px, 14dvh, 122px); }
+        .inputActionsTop .micBig { min-height: 76px; font-size: 18px; }
+        .voiceInsight { padding: 8px 10px; font-size: 11.5px; }
+        .voiceInsightRow { grid-template-columns: 58px minmax(0, 1fr); }
+        .locationStatus { min-height: 42px; max-height: 58px; font-size: 11px; padding: 7px 9px; }
+        .locationStatus small { font-size: 9.5px; }
+        .gameHero { gap: 7px; }
+        .voiceBox { gap: 7px; }
+      }
+      .playerPill { width: 38px; height: 38px; border: 2px solid var(--ink); border-radius: 9px; display: grid; place-items: center; font-size: 20px; background: var(--card); box-shadow: var(--shadow-sm); overflow: hidden; background-size: cover; background-position: center; }
+      .playerPill.img { image-rendering: pixelated; }
+      .playerWrap { display: flex; align-items: center; gap: 7px; }
+      .playerName { font-weight: 900; font-size: 13px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .playerName:empty { display: none; }
+      .nameRow { display: flex; align-items: center; gap: 9px; margin-top: 2px; }
+      .nameRow .nameLabel { flex: none; font-size: 13px; font-weight: 850; }
+      .nameRow .field { flex: 1; min-width: 0; }
+
+      /* HOME */
+      .titleMark { font-size: 20px; color: var(--red); }
+      .coin { position: relative; flex: 1 1 auto; min-height: 96px; border-radius: 14px; border: 3px solid var(--ink); background: repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 8px, transparent 8px 16px), var(--yellow); box-shadow: var(--shadow); display: grid; place-items: center; overflow: hidden; }
+      .coin .emoji { font-size: 56px; filter: drop-shadow(3px 3px 0 rgba(0,0,0,.25)); animation: float 2.4s ease-in-out infinite; }
+      /* 街机机箱 */
+      .cabinet { width: min(248px, 80%); background: #2a2540; border: 3px solid var(--ink); border-radius: 16px; padding: 15px 15px 13px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 1; }
+      .cabinet .screen { position: relative; width: 100%; height: 132px; background: radial-gradient(circle at 50% 38%, #154a32, #08160f); border: 2px solid var(--ink); border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; overflow: hidden; }
+      .cabinet .screen::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 2px, transparent 2px 4px); }
+      .screenIcon { font-size: 50px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.45)); animation: float 2.4s ease-in-out infinite; z-index: 1; }
+      .blink { font-size: 12px; color: #ffe14d; text-shadow: 0 0 7px currentColor; animation: blinkC 1.3s steps(1) infinite; z-index: 1; }
+      @keyframes blinkC { 0% { color: #ffe14d; opacity: 1; } 25% { opacity: 0; } 50% { color: #ff7ab8; opacity: 1; } 75% { opacity: 0; } }
+      .controls { display: flex; align-items: center; gap: 14px; }
+      .stick { font-size: 30px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.3)); }
+      .btnDot { width: 19px; height: 19px; border-radius: 50%; border: 2px solid var(--ink); box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
+      .btnDot.r { background: var(--red); } .btnDot.b { background: var(--blue); } .btnDot.g { background: var(--green); }
+      .slot { width: 72px; height: 9px; background: var(--ink); border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
+      .welcomeTitle { color: #d24b32; text-shadow: 2px 2px 0 rgba(0,0,0,.1); }
+      .tagline { flex: none; text-align: center; font-size: 13px; color: #9a8f78; padding: 2px 0 4px; }
+      .deco { text-shadow: 0 0 8px rgba(255,255,255,.5); }
+      .deco { position: absolute; font-size: 22px; z-index: 0; animation: floatD 3s ease-in-out infinite; }
+      .deco.d1 { top: 14px; left: 16px; } .deco.d2 { top: 22px; right: 18px; animation-delay: .4s; }
+      .deco.d3 { bottom: 18px; left: 20px; animation-delay: .8s; } .deco.d4 { bottom: 26px; right: 16px; animation-delay: 1.2s; }
+      .deco.d5 { top: 48%; left: 9px; animation-delay: .6s; }
+      @keyframes floatD { 0%,100% { transform: translateY(0) rotate(-7deg); } 50% { transform: translateY(-9px) rotate(7deg); } }
+      .coin { width: 100%; font: inherit; cursor: pointer; }
+      .coin:active { transform: translate(2px,2px); box-shadow: var(--shadow-sm); }
+      .coin canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: none; }
+      .coin.set canvas { display: block; }
+      .coin.set .coinPlus, .coin.set .coinHint { display: none; }
+      .coinPlus { font-size: 60px; line-height: 1; color: var(--ink); filter: drop-shadow(3px 3px 0 rgba(0,0,0,.18)); animation: float 2.4s ease-in-out infinite; }
+      .coinHint { position: absolute; bottom: 14px; font-size: 11px; color: #7a6a1e; }
+      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+      .slogan { font-weight: 900; font-size: 14px; padding: 10px 12px; border-radius: 11px; border: 2px dashed var(--ink); background: rgba(255,255,255,.4); flex: none; }
+      /* 首页：黄框稍短一点，整体均匀分布 */
+      .homeScreen { justify-content: space-between; }
+      .homeScreen .coin { max-height: 40dvh; }
+
+      /* MODE */
+      .modeScreen { gap: 14px; }
+      .modeList { flex: none; display: flex; flex-direction: column; gap: 16px; }
+      .skipZone { flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-end; justify-content: center; padding: 18px 0 34px; }
+      .skipSmash { position: relative; width: min(270px, 82vw); height: 94px; border: 4px solid var(--ink); border-radius: 999px; background: linear-gradient(180deg, #ff938d 0%, #ff5149 45%, #dc2520 100%); color: #fff; box-shadow: 0 12px 0 #6d1f1b, 5px 5px 0 var(--ink); font: inherit; font-size: 29px; font-weight: 950; letter-spacing: 0; text-shadow: 2px 2px 0 rgba(26,23,20,.35); cursor: pointer; overflow: hidden; transition: transform .09s ease, box-shadow .09s ease, filter .12s ease; }
+      .skipSmash::before { content: ""; position: absolute; left: 16%; right: 16%; top: 12px; height: 18px; border-radius: 999px; background: rgba(255,255,255,.28); transform: scaleX(.92); transition: transform .09s ease, opacity .09s ease, top .09s ease; }
+      .skipSmash::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 25%, rgba(255,255,255,.18), transparent 42%); opacity: .75; transition: opacity .09s ease, transform .09s ease; }
+      .skipSmash .label { position: relative; z-index: 1; display: block; transform: translateY(4px); transition: transform .09s ease; }
+      .skipSmash:active { transform: translateY(9px) scale(.985, .96); box-shadow: 0 3px 0 #6d1f1b, 2px 2px 0 var(--ink); filter: saturate(1.18); }
+      .skipSmash:active::before { top: 8px; opacity: .42; transform: scaleX(1.08); }
+      .skipSmash:active::after { opacity: .45; transform: scaleY(.88); }
+      .skipSmash:active .label { transform: translateY(8px) scale(.98); }
+      .mode { display: flex; gap: 12px; align-items: center; padding: 16px; border: 3px solid var(--ink); border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; transition: transform .08s; flex: none; }
+      .mode:active { transform: translate(2px,2px); box-shadow: var(--shadow-sm); }
+      .mode .ic { flex: none; width: 52px; height: 52px; border-radius: 12px; border: 2px solid var(--ink); display: grid; place-items: center; font-size: 27px; background: var(--card); }
+      .mode.boss { background: var(--red); color: #fff; } .mode.ai { background: var(--purple); color: #fff; } .mode.myst { background: var(--yellow); }
+      .mode .nm { font-weight: 900; font-size: 18px; }
+      .mode .ds { font-size: 12.5px; font-weight: 700; opacity: 1; line-height: 1.4; margin-top: 3px; }
+      .mode .tagline { font-size: 10px; margin-top: 6px; opacity: 1; }
+      .mode.boss .ds, .mode.ai .ds { color: rgba(255,255,255,.95); }
+      .mode.boss .tagline, .mode.ai .tagline { color: rgba(255,255,255,.78); }
+      .mode.myst .ds { color: #4a4226; } .mode.myst .tagline { color: #7a6a1e; }
+      /* 选中模式的特效：弹一下 + 发光 + ✓ 已选 + 扩散光环 */
+      .modeList.haspick .mode:not(.sel) { opacity: .5; }
+      .mode.sel { animation: modePick .45s ease; box-shadow: 0 0 0 3px var(--paper), 5px 5px 0 var(--ink), 0 0 20px 5px rgba(108,92,231,.6); }
+      .mode.sel::after { content: "✓ 已选"; position: absolute; top: 8px; right: 10px; font-size: 11px; font-weight: 900; background: var(--ink); color: var(--paper); padding: 3px 8px; border-radius: 8px; z-index: 2; }
+      .mode.sel::before { content: ""; position: absolute; inset: -3px; border: 3px solid var(--yellow); border-radius: 17px; animation: ringFlash .6s ease-out; pointer-events: none; }
+      .mode { position: relative; }
+      @keyframes modePick { 0% { transform: scale(1); } 45% { transform: scale(1.05) rotate(-1deg); } 100% { transform: scale(1); } }
+      @keyframes ringFlash { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.13); } }
+
+      /* ============ DECK ============ */
+      .counter { display: flex; align-items: center; gap: 7px; font-weight: 900; font-size: 13px; flex: none; }
+      .pips { display: flex; gap: 4px; }
+      .pip { width: 11px; height: 15px; border: 2px solid var(--ink); border-radius: 3px; background: var(--card); }
+      .pip.spent { background: var(--ink); opacity: .25; }
+      /* 游戏化 slogan：移到卡片图片上方（计数行下方） */
+      .roundSlogan { flex: none; font-size: 14px; font-weight: 950; line-height: 1.35; color: var(--info-fg, var(--ink)); padding: 9px 12px; border: 0; border-radius: 10px; background: var(--info-bg, var(--card)); box-shadow: 3px 3px 0 var(--ink); }
+      .roundSlogan:empty { display: none; }
+
+      .deckWrap { position: relative; flex: 1 1 auto; min-height: 0; }
+      .deck { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); width: min(290px, 76vw); height: calc(100% - 14px); perspective: 1000px; }
+      .gcard { position: absolute; inset: 0; border: 0; border-radius: 18px; box-shadow: 4px 5px 0 rgba(26,23,20,.72), -1px 1px 0 rgba(26,23,20,.18), inset 0 0 0 2px rgba(26,23,20,.12), 0 14px 30px rgba(26,23,20,.16); overflow: hidden; background: var(--card); will-change: transform; display: flex; flex-direction: column; }
+      .gcard .art { height: 52%; display: grid; place-items: center; font-size: 64px; border-bottom: 0; transition: background .15s; }
+      .gcard .art.photo { background-size: cover; background-position: center; color: #fff; text-shadow: 3px 3px 0 rgba(0,0,0,.45); filter: saturate(1.35) contrast(1.12); }
+      .gcard .info { padding: 12px 13px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; background: var(--info-bg, var(--card)); color: var(--info-fg, var(--ink)); }
+      .gcard .cnum { font-size: 9px; color: var(--info-muted, #8a8170); }
+      .gcard h3 { font-size: 21px; font-weight: 900; line-height: 1.1; }
+      .gameSlogan { font-size: 10.5px; font-weight: 900; line-height: 1.35; color: var(--info-fg, var(--ink)); opacity: .94; padding-left: 7px; border-left: 3px solid var(--tag-bg, rgba(255,255,255,.7)); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .gcard p { font-size: 12px; font-weight: 700; color: var(--info-muted, #5f574a); line-height: 1.45; overflow: hidden; }
+      .gcard .metaRow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; }
+      .mtag { font-size: 10px; font-weight: 800; padding: 4px 7px; border: 2px solid var(--ink); border-radius: 7px; background: var(--tag-bg, var(--paper)); color: var(--tag-fg, var(--ink)); }
+      .winCard .face.photo { background-size: cover; background-position: center; color: #fff; text-shadow: 3px 3px 0 rgba(0,0,0,.45); filter: saturate(1.35) contrast(1.12); }
+      /* 加载牌（真实餐厅管线）*/
+      .loadingCard { align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 18px; }
+      .loadingCard .spinner { width: 48px; height: 48px; border: 5px solid rgba(26,23,20,.16); border-top-color: var(--purple); border-radius: 50%; animation: spin .8s linear infinite; }
+      .loadingCard strong { font-size: 18px; font-weight: 900; }
+      .loadingCard p { max-width: 210px; color: #6b6253; font-size: 12.5px; font-weight: 700; line-height: 1.5; }
+      .loadingProgress { width: 210px; height: 14px; border: 3px solid var(--ink); border-radius: 999px; overflow: hidden; background: rgba(26,23,20,.12); box-shadow: var(--shadow-sm); }
+      .loadingProgress span { display: block; height: 100%; width: var(--progress, 0%); background: var(--yellow); transition: width .25s ease; }
+      .loadingCount { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .navMini { flex: none; width: 100%; min-height: 40px; border: 3px solid var(--ink); border-radius: 999px; background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); font: inherit; font-size: 14px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 7px; text-decoration: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      .navMini:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+
+      .gcard.flyR { transition: transform .4s cubic-bezier(.3,.8,.4,1), opacity .4s; transform: translate(135%,-10%) rotate(20deg) !important; opacity: 0; }
+      .gcard.flyL { transition: transform .4s cubic-bezier(.3,.8,.4,1), opacity .4s; transform: translate(-135%,-10%) rotate(-20deg) !important; opacity: 0; }
+      .gcard.intoPipe { transition: transform .52s cubic-bezier(.5,0,.7,.6), opacity .52s ease-in; opacity: 0; }
+      .gcard.dealing { animation: deal .42s cubic-bezier(.2,.9,.3,1) backwards; }
+      @keyframes deal { from { transform: translateY(-50px) rotate(-16deg) scale(.78); opacity: 0; } }
+      .gcard.revealing { animation: wobble .9s ease-in-out; }
+      @keyframes wobble { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-2.5deg); } 75% { transform: rotate(2.5deg); } }
+      /* 翻牌动效：3D 翻入，配合牌面轮转 */
+      .gcard.flip { animation: flipReveal .52s cubic-bezier(.3,.7,.4,1); transform-origin: center; backface-visibility: hidden; }
+      @keyframes flipReveal { 0% { transform: rotateY(-88deg) scale(.9); } 55% { transform: rotateY(10deg) scale(1.03); } 100% { transform: rotateY(0) scale(1); } }
+
+      .stamp { position: absolute; top: 18px; padding: 6px 11px; border: 4px solid; border-radius: 9px; font-size: 19px; font-weight: 950; opacity: 0; z-index: 6; pointer-events: none; }
+      .stamp.s-r { right: 14px; color: var(--green); transform: rotate(12deg); }
+      .stamp.s-l { left: 14px; color: #c79100; transform: rotate(-12deg); }
+      .stamp.s-d { left: 50%; bottom: 16px; top: auto; transform: translateX(-50%); color: var(--red); }
+
+      /* 底部控制：红 Pass · 下水道(Bye bye) · 蓝 Pick；下水道直达屏幕底端，左右键略小 */
+      /* margin 负值抵消 .screen 的 14px/16px 内边距，让下水道贴住屏幕底边 */
+      .deckControls { display: flex; align-items: flex-end; justify-content: center; gap: 12px; flex: none; margin: 2px -16px -14px; }
+      .ctrlSide { flex: none; width: 82px; height: 54px; border: 3px solid var(--ink); border-radius: 14px; box-shadow: var(--shadow-sm); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; margin-bottom: 8px; transition: transform .08s, box-shadow .08s, filter .12s; }
+      .ctrlSide:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+      .ctrlSide .big { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 15px; font-weight: 700; line-height: 1.15; letter-spacing: .5px; }
+      .ctrlSide .sm { font-size: 9.5px; font-weight: 800; opacity: .9; }
+      .ctrlSide.no { background: var(--red); color: #fffaf2; }
+      .ctrlSide.pick { background: var(--blue); color: #fffaf2; }
+      .ctrlSide[disabled] { opacity: .55; filter: grayscale(.2); cursor: default; }
+
+      /* 下水道：立体水管（管口 rim + 管身 body + 黑洞 mouth），下滑被吸入=永久拉黑 */
+      .pipeBtn { flex: none; position: relative; width: 128px; padding: 0; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: transform .1s; }
+      .pipeBtn:active { transform: translateY(2px); }
+      .pipeBtn[disabled] { opacity: .55; filter: grayscale(.2); cursor: default; }
+      .pipeBtn .rim { height: 30px; width: 128px; border: 3px solid var(--ink); border-radius: 8px; display: grid; place-items: center;
+        background: linear-gradient(90deg, var(--pipe-d) 0 12%, var(--pipe-l) 12% 26%, var(--pipe) 26% 100%); box-shadow: var(--shadow-sm); }
+      .pipeBtn .plabel { position: relative; z-index: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 15px; font-weight: 700; color: #fffaf2; text-shadow: 1px 1px 0 rgba(0,0,0,.5); letter-spacing: .5px; }
+      .pipeBtn .body { position: relative; height: 50px; width: 104px; margin: -3px auto 0; border: 3px solid var(--ink); border-top: none;
+        background: linear-gradient(90deg, var(--pipe-d) 0 14%, var(--pipe-l) 14% 30%, var(--pipe) 30% 100%); }
+      .pipeBtn .mouth { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 104px; height: 11px; background: rgba(0,0,0,.55); border-radius: 50%; }
+
+      /* WIN overlay */
+      .win { position: absolute; inset: 0; z-index: 40; display: none; place-items: center; padding: 18px; background: rgba(26,23,20,.55); backdrop-filter: blur(3px); }
+      .win.show { display: grid; }
+      .winCard { width: min(320px, 86vw); background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; text-align: center; animation: drop .6s cubic-bezier(.2,1.3,.4,1); }
+      @keyframes drop { 0% { transform: translateY(-120vh) rotate(-12deg); } 70% { transform: translateY(10px) rotate(3deg); } 100% { transform: none; } }
+      .winCard .tag { font-size: 12px; color: var(--red); }
+      .winCard .cg { font-weight: 900; font-size: 23px; margin: 2px 0 10px; }
+      .winCard .settleBig { font-weight: 950; font-size: 26px; line-height: 1.18; color: var(--red); margin: 2px 0 12px; letter-spacing: .5px; }
+      .winCard .settleBig:empty { display: none; }
+      .winCard .face { height: 122px; border-radius: 13px; border: 2px solid var(--ink); display: grid; place-items: center; font-size: 58px; margin-bottom: 10px; }
+      .winCard h2 { font-size: 22px; font-weight: 900; }
+      .winCard p { font-size: 12.5px; font-weight: 600; color: #5f574a; line-height: 1.5; margin: 7px 0 10px; }
+      .winCard .metaRow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 12px; }
+      .links { display: flex; gap: 8px; margin-bottom: 8px; } .links .btn { font-size: 13px; padding: 11px; }
+
+      .confetti { position: absolute; inset: 0; z-index: 39; pointer-events: none; overflow: hidden; }
+      .conf { position: absolute; width: 9px; height: 14px; will-change: transform; }
+      @keyframes fall { to { transform: translateY(115vh) rotate(720deg); opacity: .9; } }
+      .toast { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 30; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 12.5px; padding: 9px 15px; border-radius: 10px; opacity: 0; transition: opacity .25s; }
+      .toast.show { opacity: 1; }
+      .soundGate { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 9999; border: 3px solid var(--ink); border-radius: 999px; background: var(--yellow); color: var(--ink); box-shadow: var(--shadow-sm); padding: 9px 14px; font: inherit; font-size: 12px; font-weight: 950; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: opacity .18s ease, transform .18s ease, background .18s ease; }
+      .soundGate.loading { background: var(--card); }
+      .soundGate.ready { opacity: 0; pointer-events: none; transform: translate(-50%, -8px); }
+    </style>
+    <link rel="stylesheet" href="minimal-theme.css?v=20260601-lite" />
+  </head>
+  <body>
+    <button class="soundGate pixel" id="soundGate" type="button" ontouchstart="startBgmFromButton(event)" onpointerdown="startBgmFromButton(event)" onmousedown="startBgmFromButton(event)" onclick="startBgmFromButton(event)">🔊 开启音乐</button>
+    <audio id="bgm" src="audio/choice-loop.mp3?v=20260531-2" preload="auto" loop playsinline webkit-playsinline></audio>
+    <div class="phone">
+      <div class="screens">
+        <!-- 1) WELCOME -->
+        <section class="screen active homeScreen" data-screen="welcome">
+          <div class="topbar"><span class="badge red pixel">SIMPLE MODE</span><span class="dots pixel">LITE 01/08</span></div>
+          <div><div class="titleMark pixel">不做选择 Lite</div><div class="lead" style="font-size:28px">选择困难症外挂</div></div>
+          <div class="coin"><span class="emoji">🎮</span></div>
+          <div class="sub">把“你定 / 我随便”变成一个清楚答案。<br />你的专属决策助手。</div>
+          <div class="slogan">「让日常选择轻一点。」</div>
+          <div class="chipwrap homeChips"><span class="chip on">🍜 今晚吃什么</span><span class="chip">🗺️ 周末去哪</span><span class="chip">🎁 送礼物</span></div>
+          <button class="btn red" onclick="go('config')">开始决策</button>
+        </section>
+
+        <!-- 2) CONFIG -->
+        <section class="screen configScreen" data-screen="config">
+          <div class="topbar"><span class="badge purple pixel">SETUP</span><button class="back" onclick="skipConfig()">跳过</button></div>
+          <div class="lead" style="font-size:22px">设置偏好</div>
+          <div class="sub">选一个头像，再补充一点会影响推荐的个人偏好。</div>
+          <div class="setupCard">
+            <div class="avatarRow">
+              <button class="avatarSlot" id="avatarSlot" type="button" title="点头像上传自己的照片"><canvas id="avatarCanvas" width="64" height="64"></canvas><img class="avatarPic" id="avatarPic" alt="" /><span class="avatarEmoji" id="avatarEmoji">🍄</span></button>
+              <div class="infoCol">
+                <div class="hintRow pixel">从下方图库挑一个，<br />或点头像上传照片生成像素头像。位置会在选模式后自动获取。</div>
+              </div>
+            </div>
+            <div class="avatarGallery" id="avatarGallery"></div>
+            <div class="nameRow"><label class="nameLabel">姓名</label><input class="field" id="playerNameInput" maxlength="12" placeholder="给角色起个名（可跳过，写了会显示在头像旁）" /></div>
+          </div>
+          <div class="hintCard">补充一点偏好，推荐会更贴近你。</div>
+          <div class="card profileCard">
+            <div class="pRow"><label>性别</label><div class="segChips" id="genderChips"><span class="chip">♀ 女</span><span class="chip">♂ 男</span><span class="chip">🤖 不说</span></div></div>
+            <div class="pRow"><label>星座</label>
+              <select class="field sel" id="zodiac"><option value="">未选</option><option>白羊</option><option>金牛</option><option>双子</option><option>巨蟹</option><option>狮子</option><option>处女</option><option>天秤</option><option>天蝎</option><option>射手</option><option>摩羯</option><option>水瓶</option><option>双鱼</option></select>
+            </div>
+            <div class="pRow"><label>MBTI</label>
+              <select class="field sel" id="mbti"><option value="">未选</option><option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option><option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option><option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option><option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option></select>
+            </div>
+            <div class="pRow"><label>其他</label>
+              <div class="voiceRow" style="flex:1"><input class="field" id="custom" placeholder="生日 / 口味 / 忌口…（可语音）" /><button class="micBtn" type="button" onclick="startVoice('custom', this)">🎤</button></div>
+            </div>
+          </div>
+          <input type="file" id="photo" accept="image/*" hidden />
+          <button class="btn huge red" onclick="finishConfig()">保存并继续 →</button>
+        </section>
+
+        <!-- 3) GAME -->
+        <section class="screen" data-screen="game">
+          <div class="topbar"><span class="badge yellow pixel">不做选择</span><span class="playerWrap"><span class="playerName" id="playerName"></span><span class="playerPill" id="playerPill">🍄</span></span></div>
+          <div class="gameHero">
+            <div class="lead" style="font-size:23px; text-align:center; line-height:1.25">选择难？<br />开一局就有答案！</div>
+            <div class="locationStatus" id="locationStatus" data-state="loading"><span>定位：正在获取当前城市…</span></div>
+            <div class="voiceBox">
+              <div class="inputActions inputActionsTop">
+                <button class="micBig voicePrimary" id="micChoice" type="button" onclick="startVoice('choiceInput', this)">🎤 按住说出纠结</button>
+              </div>
+              <div class="voiceInsight" id="voiceInsight" hidden>
+                <div class="voiceInsightRow"><span class="voiceInsightLabel">识别原文</span><span class="voiceInsightValue wrap" id="voiceTranscriptText"></span></div>
+                <div class="voiceInsightRow"><span class="voiceInsightLabel">餐厅意图</span><span class="voiceInsightValue wrap" id="voiceIntentText"></span></div>
+                <div class="voiceInsightRow"><span class="voiceInsightLabel">高德关键词</span><span class="voiceInsightValue" id="voiceKeywordText"></span></div>
+              </div>
+              <textarea class="field bigInput" id="choiceInput" placeholder="说出或打出你的纠结…&#10;例如：今晚到底吃什么？"></textarea>
+              <div class="quickTags" id="choiceTags">
+                <div class="quickTagRow" aria-label="场景标签">
+                  <span class="quickTagLabel">场景</span>
+                  <button class="chip" type="button" data-kind="scene" data-tag="今晚约饭">今晚约饭</button>
+                  <button class="chip" type="button" data-kind="scene" data-tag="朋友聚餐">朋友聚餐</button>
+                  <button class="chip" type="button" data-kind="scene" data-tag="约会吃饭">约会吃饭</button>
+                  <button class="chip" type="button" data-kind="scene" data-tag="一人食">一人食</button>
+                </div>
+                <div class="quickTagRow" aria-label="需求标签">
+                  <span class="quickTagLabel">需求</span>
+                  <button class="chip" type="button" data-kind="need" data-tag="人均150+">人均150+</button>
+                  <button class="chip" type="button" data-kind="need" data-tag="离我近">离我近</button>
+                  <button class="chip" type="button" data-kind="need" data-tag="少排队">少排队</button>
+                  <button class="chip" type="button" data-kind="need" data-tag="安静好聊">安静好聊</button>
+                </div>
+                <div class="quickTagRow" aria-label="偏好标签">
+                  <span class="quickTagLabel">偏好</span>
+                  <button class="chip" type="button" data-kind="need" data-tag="西餐">西餐</button>
+                  <button class="chip" type="button" data-kind="need" data-tag="火锅">火锅</button>
+                  <button class="chip" type="button" data-kind="need" data-tag="通宵熬夜">通宵熬夜</button>
+                </div>
+              </div>
+              <div class="thumbRow" id="choiceThumbs"></div>
+            </div>
+          </div>
+          <button class="btn alt big" onclick="openModeScreen()">选择推荐方式 →</button>
+        </section>
+
+        <!-- MODE -->
+        <section class="screen modeScreen" data-screen="mode">
+          <div class="topbar"><span class="badge yellow pixel">RECOMMENDATION</span><button class="back" onclick="go('game')">← 返回</button></div>
+          <div class="lead" style="font-size:22px">推荐方式</div>
+          <div class="modeList" id="modeList">
+            <div class="mode boss" onclick="selectMode('霸总模式','BOSS MODE',this)"><div class="ic">🎲</div><div><div class="nm">霸总模式</div><div class="ds">不要你觉得，我要我觉得。</div><div class="tagline pixel">[ BOSS MODE ] 纯随机 · 一秒通关</div></div></div>
+            <div class="mode ai" onclick="selectMode('AI 模式','AI INTEL',this)"><div class="ic">🤖</div><div><div class="nm">AI 模式</div><div class="ds">大模型推荐，深度语义契合。</div><div class="tagline pixel">[ AI INTEL ] 大模型 · 极智解忧</div></div></div>
+            <div class="mode myst" onclick="selectMode('玄学模式','MYSTIC',this)"><div class="ic">🔮</div><div><div class="nm">玄学模式</div><div class="ds">“来自今日星盘的天命抉择。”</div><div class="tagline pixel">[ 玄学 ] 运势流 · 命中注定</div></div></div>
+          </div>
+          <div class="skipZone">
+            <button class="skipSmash" id="skipBtn" type="button" onclick="skipMode()"><span class="label">直接开始</span></button>
+          </div>
+          <div class="sub" style="text-align:center;font-size:12px">点卡片选择推荐方式 · 也可以直接开始</div>
+        </section>
+
+        <!-- DECK -->
+        <section class="screen" data-screen="deck">
+          <div class="topbar"><span class="badge purple pixel" id="deckLabel">AI INTEL</span><button class="back" onclick="openModeScreen()">← 返回</button></div>
+          <div class="counter"><span>这局只有</span><span class="pips" id="pips"></span><span id="leftN">5</span><span>张 · 看清楚再滑</span></div>
+          <div class="roundSlogan" id="roundSlogan"></div>
+          <div class="deckWrap">
+            <div class="deck" id="deck"></div>
+          </div>
+          <div class="deckControls">
+            <button class="ctrlSide no" type="button" data-act data-dir="left" onclick="tapDecision('left')"><span class="big">Pass</span><span class="sm">左滑待定</span></button>
+            <button class="pipeBtn" id="pipe" type="button" data-act data-dir="down" onclick="tapDecision('down')"><div class="rim"><span class="plabel">Bye bye</span></div><div class="body"><div class="mouth"></div></div></button>
+            <button class="ctrlSide pick" type="button" data-act data-dir="right" onclick="tapDecision('right')"><span class="big">Pick</span><span class="sm">右滑就它</span></button>
+          </div>
+          <div class="toast" id="toast"></div>
+        </section>
+      </div>
+
+      <div class="confetti" id="confetti"></div>
+      <div class="win" id="win">
+        <div class="winCard">
+          <div class="tag pixel">不做选择</div>
+          <div class="cg pixel">Congratulations!</div>
+          <div class="settleBig" id="wSettle"></div>
+          <div class="face" id="wFace">🍲</div>
+          <h2 id="wName">自选麻辣烫</h2>
+          <p id="wReason"></p>
+          <div class="metaRow" id="wMeta"></div>
+          <div class="links"><button class="btn alt" id="wNav">🗺️ 导航</button></div>
+          <button class="btn" onclick="resetAll()">🔁 再来一局</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 餐厅卡：附近真实餐厅 + 高德照片，照片不可用时使用本地备用食物图。
+      function foodArtDataUrl(emoji, bg, accent){
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+          <rect width="900" height="560" rx="48" fill="${bg}"/>
+          <circle cx="742" cy="86" r="116" fill="${accent}" opacity=".42"/>
+          <circle cx="162" cy="476" r="138" fill="#fffaf2" opacity=".28"/>
+          <path d="M42 112h816M42 448h816" stroke="#1a1714" stroke-width="18" stroke-linecap="round" opacity=".16"/>
+          <g transform="translate(450 284)">
+            <circle r="154" fill="#fffaf2" stroke="#1a1714" stroke-width="18"/>
+            <text y="56" text-anchor="middle" font-size="176" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${emoji}</text>
+          </g>
+          <g fill="#1a1714" opacity=".18">
+            <rect x="94" y="74" width="88" height="24" rx="12"/>
+            <rect x="694" y="438" width="128" height="24" rx="12"/>
+            <rect x="92" y="146" width="42" height="42" rx="12"/>
+            <rect x="776" y="158" width="42" height="42" rx="12"/>
+          </g>
+        </svg>`;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+      }
+      const FOOD_ART = {
+        hot: [foodArtDataUrl("🍲", "#ff5a4d", "#f6c518"), foodArtDataUrl("🍜", "#ff7ab8", "#3d6bff"), foodArtDataUrl("🌶️", "#6c5ce7", "#ff5a4d")],
+        japan: [foodArtDataUrl("🍣", "#28c76f", "#f6c518"), foodArtDataUrl("🍱", "#3d6bff", "#ff7ab8"), foodArtDataUrl("🍜", "#f6c518", "#28c76f")],
+        western: [foodArtDataUrl("🥩", "#f6c518", "#ff5a4d"), foodArtDataUrl("🍝", "#6c5ce7", "#28c76f"), foodArtDataUrl("🍕", "#3d6bff", "#f6c518")],
+        chinese: [foodArtDataUrl("🥢", "#ff7ab8", "#f6c518"), foodArtDataUrl("🥟", "#28c76f", "#6c5ce7"), foodArtDataUrl("🍚", "#3d6bff", "#ff5a4d")],
+        light: [foodArtDataUrl("☕", "#6c5ce7", "#f6c518"), foodArtDataUrl("🍰", "#ff7ab8", "#28c76f"), foodArtDataUrl("🍹", "#3d6bff", "#ff7ab8")]
+      };
+      const POOL = [
+        { emoji: "🍲", name: "蜀宴·精品川菜", art: "var(--red)", image: FOOD_ART.hot[0], reason: "香辣有记忆点，适合想吃得热闹一点的晚上。", meta: ["📍320m","★4.6","¥180"] },
+        { emoji: "🍣", name: "旬味·日料小馆", art: "var(--green)", image: FOOD_ART.japan[0], reason: "出品精致、节奏不赶，约会或慢慢聊都合适。", meta: ["📍480m","★4.7","¥220"] },
+        { emoji: "🥩", name: "焰火·熟成牛排", art: "var(--yellow)", image: FOOD_ART.western[0], reason: "仪式感更强，适合想直接定一个不出错的选择。", meta: ["📍600m","★4.6","¥260"] },
+        { emoji: "🍝", name: "橄榄·精致西餐", art: "var(--purple)", image: FOOD_ART.western[1], reason: "口味稳、摆盘好，边吃边聊不会太吵。", meta: ["📍710m","★4.5","¥190"] },
+        { emoji: "🍶", name: "鸟旬·烧鸟酒场", art: "var(--blue)", image: FOOD_ART.japan[1], reason: "小份多样、能慢慢点，适合把选择压力降下来。", meta: ["📍750m","★4.6","¥170"] },
+      ];
+      // 卡片信息区主题色
+      const INFO_THEMES = [
+        { bg: "#ff554f", fg: "#fffaf2", muted: "#ffe6dc", tagBg: "#fffaf2", tagFg: "#1a1714" },
+        { bg: "#6d58e8", fg: "#fffaf2", muted: "#e3ddff", tagBg: "#fffaf2", tagFg: "#1a1714" },
+        { bg: "#ffcf24", fg: "#1a1714", muted: "#4a4226", tagBg: "#1a1714", tagFg: "#fffaf2" },
+        { bg: "#22c96b", fg: "#0f2116", muted: "#0d3a20", tagBg: "#fffaf2", tagFg: "#1a1714" },
+        { bg: "#ff7ab8", fg: "#1a1714", muted: "#4a2436", tagBg: "#1a1714", tagFg: "#fffaf2" },
+      ];
+      const CARD_SLOGANS = [
+        "纠结不用保底，一发直出人生答案",
+        "告别反复脑补，抉择池单抽出奇迹",
+        "不用垫刀赌运气，转盘直接锁定最优解",
+        "脑内十连全歪？来这一发搞定选择题",
+        "犹豫debuff持续掉快乐？一键清掉异常状态",
+        "选择困难主线卡关，系统一键速通副本",
+        "放弃单人苦思，召唤命运NPC帮你过任务",
+        "左右横跳原地刷怪，不如直接结算选项",
+        "系统警告：长时间纠结，快乐值持续衰减",
+        "叮！命运系统已自动帮你完成抉择任务",
+        "检测到玩家重度选择困难，开启自动判定模式",
+        "无需手动思考，托管模式直接敲定选择",
+        "抽个选项，结束内耗",
+        "抉择开盲盒，万事不纠结",
+        "托管人生，轻松通关",
+        "别在脑海无限循环复盘，打开APP抽一发，直接通关选择副本",
+        "与其卡在人生分叉路口反复SL读档，不如交给系统一键判定",
+        "对抗选择困难这款怪，不用自己磨血，命运转盘一招秒杀"
+      ];
+      const MODE_SETTLE_COPY = {
+        "霸总模式": "别选了，就他了！",
+        "AI 模式": "别翻了，真的没有了！",
+        "玄学模式": "别寻了，缘分定了！"
+      };
+      function cardThemeStyle(c) {
+        const t = INFO_THEMES[((c.no || 1) - 1) % INFO_THEMES.length];
+        return `--info-bg:${t.bg};--info-fg:${t.fg};--info-muted:${t.muted};--tag-bg:${t.tagBg};--tag-fg:${t.tagFg};--nav-bg:${t.tagBg};--nav-fg:${t.tagFg};`;
+      }
+      function randomCardSlogan(){
+        return CARD_SLOGANS[Math.floor(Math.random() * CARD_SLOGANS.length)];
+      }
+      const TOTAL = POOL.length;
+      // 真实餐厅管线（与 preview.html 同源）：高德 POI(JSONP) + DeepSeek 搜索意图
+      const AMAP_WEB_SERVICE_KEY = "7f40078338209e23255e8f8e0ca8cc37";
+      const DEFAULT_AMAP_CENTER = { lat: 39.904179, lng: 116.407387, amap: true, label: "北京" };
+      const MIN_RESTAURANT_COST = 150;
+      const AMAP_RESTAURANT_LIMIT = 20;
+      const AMAP_SEARCH_PAGES = 6;
+      const AMAP_PRICE_POOL_SIZE = 30;
+      const AMAP_SHOW_FIELDS_DEFAULT = "business,photos,navi";
+      const AMAP_SEARCH_MIN_RADIUS = 1000;
+      const AMAP_SEARCH_MAX_RADIUS = 30000;
+      const ACCENTS = ["var(--red)", "var(--green)", "var(--yellow)", "var(--purple)", "var(--blue)"];
+      const FOOD_CARD_IMAGES = [
+        { keywords: ["火锅","川","湘","辣","麻辣","串串","烤鱼"], urls: FOOD_ART.hot },
+        { keywords: ["日","寿司","料理","烧鸟","居酒屋","刺身","拉面"], urls: FOOD_ART.japan },
+        { keywords: ["西","牛排","意面","披萨","法","brunch","bistro"], urls: FOOD_ART.western },
+        { keywords: ["粤","港","茶餐","点心","本帮","江浙","中餐","私房"], urls: FOOD_ART.chinese },
+        { keywords: ["咖啡","甜品","蛋糕","酒","吧","小食"], urls: FOOD_ART.light }
+      ];
+      const IS_LOCAL_PREVIEW = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      const WORKER_API_BASE = location.protocol === "file:" ? "http://127.0.0.1:8788" : (location.hostname === "no-choice.pages.dev" ? "" : "https://no-choice.pages.dev");
+      const RESTAURANT_SEARCH_PLAN_ENDPOINT = `${WORKER_API_BASE}/api/restaurant-search-plan`;
+      const RESTAURANT_KEYWORD_FALLBACK = "餐厅";
+      const TAG_SEARCH_KEYWORDS = {
+        "今晚约饭": ["餐厅"],
+        "朋友聚餐": ["聚餐", "餐厅"],
+        "约会吃饭": ["约会餐厅", "西餐", "日料"],
+        "一人食": ["一人食", "简餐"],
+        "人均150+": [],
+        "离我近": [],
+        "少排队": [],
+        "安静好聊": ["安静餐厅", "咖啡", "西餐"],
+        "西餐": ["西餐"],
+        "火锅": ["火锅"],
+        "通宵熬夜": ["夜宵", "烧烤", "火锅"]
+      };
+      const PRIORITY_TAGS = new Set(["西餐", "火锅", "通宵熬夜"]);
+      const FOOD_SEARCH_TERMS = ["火锅","夜宵","烤肉","烧烤","日料","日本料理","寿司","韩餐","韩国料理","泰餐","西餐","牛排","意面","披萨","粤菜","川菜","湘菜","云南菜","云贵菜","傣味","菌子火锅","过桥米线","云南米线","贵州菜","东北菜","新疆菜","西北菜","北京菜","烤鸭","本帮菜","江浙菜","海鲜","素食","轻食","咖啡","甜品","brunch","早午餐","小酒馆","酒吧","烧鸟","居酒屋","麻辣烫","拉面","面馆","米粉","私房菜","中餐","餐厅"];
+      const LOCATION_SUFFIX_PATTERN = "(?:区|县|市|镇|乡|街道|商圈|机场|火车站|高铁站|大学|学院|大厦|写字楼|广场|公园|园区|CBD)";
+      const RESTAURANT_ACTOR_PATTERN = "(?:我|本人|自己|朋友|对象|男朋友|女朋友|男友|女友|对方|同事|他|她|一个人|另一个人|一位|另一位|A|B|a|b)";
+      const RESTAURANT_LOCATION_CAPTURE = "([\\u4e00-\\u9fa5A-Za-z0-9·\\-]{2,24}?)(?=(?:附近|周边|这边|那边|吃饭|吃|找|搜|搜索|安排|看看|餐厅|饭店|，|,|。|!|！|\\?|？|；|;|但|但是|不过|可是|朋友|对方|同事|他|她|我们|咱们|大家|一起|$))";
+      const RESTAURANT_MEETUP_MAX_RADIUS = AMAP_SEARCH_MAX_RADIUS;
+      const RESTAURANT_MEETUP_MIN_RADIUS = 4500;
+      // 上传照片后展示的预生成像素头像（demo：原图 → 像素图）
+      const PIXEL_AVATAR = "avatars/me-pixel.jpg";
+      const $ = (s) => document.querySelector(s);
+      const BGM_VOLUME = 0.72;
+      let deck = [], pending = [], mode = "AI 模式", drag = null, ready = false, topEl = null, revT = null, activePool = POOL, lastCoords = null, locationStatusPromise = null, locationStatusSeq = 0, restaurantGeocodeCityCache = { key: "", value: "", promise: null }, restaurantContext = null, restaurantContextPromise = null, restaurantSearchPlan = null, restaurantSearchPlanSignature = "", restaurantSearchPlanPromise = null;
+      let bgmUnlockInstalled = false;
+
+      function go(name){ startBgm(); document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active", s.dataset.screen===name)); if(name === "game") primeLocationStatus(); }
+      function setSoundGate(state, label){
+        const gate = $("#soundGate");
+        if(!gate) return;
+        gate.classList.toggle("ready", state === "playing");
+        gate.classList.toggle("loading", state === "loading");
+        if(label) gate.textContent = label;
+      }
+      function playBgm({ forceLoad = false } = {}){
+        const audio = $("#bgm");
+        if(!audio) return Promise.resolve(false);
+        audio.loop = true;
+        audio.muted = false;
+        audio.preload = "auto";
+        audio.setAttribute("playsinline", "");
+        audio.setAttribute("webkit-playsinline", "");
+        audio.volume = BGM_VOLUME;
+        if(forceLoad || audio.readyState === 0) audio.load();
+        const playPromise = audio.play();
+        if(playPromise && typeof playPromise.then === "function"){
+          return playPromise.then(()=>{ setSoundGate("playing", "🔊 播放中"); return true; }).catch((err)=>{
+            setSoundGate("blocked", "🔊 开启音乐");
+            console.warn("BGM play blocked", err);
+            return false;
+          });
+        }
+        setSoundGate("playing", "🔊 播放中");
+        return Promise.resolve(true);
+      }
+      function startBgm(){
+        playBgm().then((ok)=>{ if(!ok) installBgmUnlock(); });
+      }
+      window.startBgmFromButton = function(event){
+        if(event){
+          event.stopPropagation();
+        }
+        setSoundGate("loading", "🔊 音乐启动中");
+        playBgm({ forceLoad: true }).then((ok)=>{
+          if(!ok) toast("浏览器拦截了声音，请再点顶部音乐按钮");
+        });
+      };
+      function installBgmUnlock(){
+        if(bgmUnlockInstalled) return;
+        bgmUnlockInstalled = true;
+        const unlock = ()=>{
+          playBgm().then((ok)=>{
+            if(!ok) return;
+            ["pointerdown","touchstart","click","keydown"].forEach(type=>document.removeEventListener(type, unlock, true));
+          });
+        };
+        ["pointerdown","touchstart","click","keydown"].forEach(type=>document.addEventListener(type, unlock, true));
+      }
+      function openModeScreen(){
+        modeStarting = false;
+        selectedMode = null;
+        $("#modeList").classList.remove("haspick");
+        document.querySelectorAll(".mode").forEach(m=>m.classList.remove("sel"));
+        go("mode");
+      }
+
+      async function startGame(name,label){ mode=name; $("#deckLabel").textContent=label+" · DECK"; go("deck"); await prepareLocationDeck(); }
+
+      // 选模式：点卡片后带特效，随后直接开局
+      let selectedMode = null;
+      let modeStarting = false;
+      function selectMode(name, label, el){
+        if(modeStarting) return;
+        modeStarting = true;
+        selectedMode = { name, label };
+        $("#modeList").classList.add("haspick");
+        document.querySelectorAll(".mode").forEach(m=>m.classList.remove("sel"));
+        el.classList.remove("sel"); void el.offsetWidth; el.classList.add("sel"); // 重放动画
+        toast("已选「"+name+"」· 马上开局");
+        setTimeout(()=>startGame(name, label), 260);
+      }
+      // 跳过：随机替你定一个，直接发牌（不做选择～）
+      function skipMode(){
+        if(modeStarting) return;
+        modeStarting = true;
+        const ms=[["霸总模式","BOSS MODE"],["AI 模式","AI INTEL"],["玄学模式","MYSTIC"]];
+        const m=ms[Math.floor(Math.random()*ms.length)];
+        toast("随机替你选了「"+m[0]+"」");
+        startGame(m[0], m[1]);
+      }
+
+      async function prepareLocationDeck(){
+        ready=false; clearInterval(revT); pending=[];
+        updateGestureButtons();
+        try{
+          renderLoadingDeck("正在定位附近餐厅", "读取你的位置，再从高德拿真实餐厅。");
+          const context = await ensureRestaurantContext({ modeName: mode });
+          const cards = await loadRestaurantCards(context.coords, context.pois, context);
+          if(cards.length){
+            const prepared = await prepareVisualCards(cards);
+            resetDeck(prepared || cards, { shuffle: mode === "玄学模式" });
+            return;
+          }
+          throw new Error("真实餐厅为空");
+        }catch(err){
+          console.warn("Restaurant deck unavailable", err);
+          // 只有真实餐厅和 AI 链路都没有可用结果时，才使用本地示例兜底。
+          toast("真实餐厅暂时为空，使用示例卡兜底");
+          resetDeck(POOL);
+        }
+      }
+
+      function resetDeck(cards = POOL, { shuffle = true } = {}){
+        activePool = (cards && cards.length ? cards : POOL).map((c,i)=>({
+          ...c,
+          no:i+1,
+          slogan: c.slogan || randomCardSlogan()
+        }));
+        deck = activePool.map(c=>({...c}));
+        if(shuffle){
+          for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+        }
+        pending = [];
+        renderDeck(); dealRound();
+      }
+
+      function faceHTML(c, withStamps){
+        const art = c.image
+          ? `<div class="art photo" style="background-image:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.26)), url('${cssUrl(c.image)}')"></div>`
+          : `<div class="art" style="background: repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 2px, transparent 2px 14px), ${c.art}">${escapeHTML(c.emoji || "🍽️")}</div>`;
+        const navUrl = cardNavigationUrl(c);
+        const nav = navUrl ? `<a class="navMini" href="${escapeAttr(navUrl)}" data-nav="${escapeAttr(navUrl)}" onclick="event.stopPropagation()">📍 去导航</a>` : "";
+        return `
+          ${art}
+          <div class="info" style="${cardThemeStyle(c)}">
+            <div class="cnum pixel">NO.${c.no} / ${TOTAL} · 附近真实餐厅</div>
+            <h3>${escapeHTML(c.name)}</h3>
+            <p>${escapeHTML(c.reason)}</p>
+            <div class="metaRow">${(c.meta||[]).map(m=>`<span class="mtag">${escapeHTML(m)}</span>`).join("")}</div>
+            ${nav}
+          </div>` + (withStamps ? `
+          <div class="stamp s-r pixel">Pick</div>
+          <div class="stamp s-l pixel">Pass</div>
+          <div class="stamp s-d pixel">Bye bye</div>` : "");
+      }
+
+      function renderDeck(){
+        const el = $("#deck"); el.innerHTML="";
+        const n = Math.min(3, deck.length);
+        // behind cards (depth, 显示牌堆有限)
+        for(let i=n-1;i>=1;i--){
+          const back=document.createElement("div"); back.className="gcard";
+          back.style.transform=`translateY(${i*9}px) scale(${1-i*0.04}) rotate(${i%2?2.5:-2.5}deg)`;
+          back.style.zIndex=5-i; back.style.background="var(--card)";
+          el.appendChild(back);
+        }
+        // top card (face up)
+        topEl=document.createElement("div"); topEl.className="gcard dealing"; topEl.style.zIndex=10;
+        topEl.innerHTML=faceHTML(deck[0], true);
+        el.appendChild(topEl);
+        updateRoundSlogan(deck[0]);
+        updateCounter();
+      }
+
+      function setTopFace(c){ if(topEl) topEl.innerHTML=faceHTML(c, true); }
+      function updateRoundSlogan(c){
+        const rs=$("#roundSlogan");
+        if(!rs) return;
+        rs.textContent = (c && c.slogan) || "";
+        rs.setAttribute("style", c ? cardThemeStyle(c) : "");
+      }
+
+      // 先轮转抽出顶端卡牌，settle 后才允许滑动
+      // 翻牌动效：卡牌 3D 翻入 + 牌面快速轮转，落到本张后才可滑
+      function dealRound(){
+        ready=false; updateGestureButtons(); clearInterval(revT);
+        if(!topEl) return;
+        topEl.classList.remove("dealing","flip"); void topEl.offsetWidth; topEl.classList.add("flip");
+        let k=0; const total=5+Math.floor(Math.random()*3);
+        revT=setInterval(()=>{
+          setTopFace(activePool[k%activePool.length]); k++;
+          if(k>=total){ clearInterval(revT); setTopFace(deck[0]); ready=true; attachDrag(topEl); updateGestureButtons(); }
+        }, 70);
+      }
+
+      function updateCounter(){
+        $("#leftN").textContent = deck.length;
+        const pips = $("#pips"); pips.innerHTML="";
+        for(let i=0;i<TOTAL;i++){ const p=document.createElement("span"); p.className="pip"+(i>=deck.length?" spent":""); pips.appendChild(p); }
+      }
+
+      function attachDrag(card){
+        const sr=card.querySelector(".s-r"), sl=card.querySelector(".s-l"), sd=card.querySelector(".s-d");
+        const onDown=(e)=>{
+          if(!ready || e.target.closest(".navMini,button,a,input,textarea,select,label")) return;
+          card.setPointerCapture(e.pointerId); drag={sx:e.clientX,sy:e.clientY,x:0,y:0}; card.style.transition="none";
+        };
+        const onMove=(e)=>{ if(!drag) return; drag.x=e.clientX-drag.sx; drag.y=e.clientY-drag.sy;
+          const down = drag.y>0 && drag.y>Math.abs(drag.x);
+          // 下滑更顺：纵向为主时只走 Y，并轻微缩小，像被水管吸入
+          if(down){ const s=Math.max(.82,1-drag.y/900); card.style.transform=`translate(${drag.x*0.3}px,${drag.y}px) scale(${s})`; }
+          else { card.style.transform=`translate(${drag.x}px,${drag.y}px) rotate(${drag.x/16}deg)`; }
+          sr.style.opacity = down?0:Math.max(0,Math.min(1,drag.x/85));
+          sl.style.opacity = down?0:Math.max(0,Math.min(1,-drag.x/85));
+          sd.style.opacity = Math.max(0,Math.min(1,(drag.y-15)/85)) * (down?1:0);
+        };
+        const onUp=()=>{ if(!drag) return; const {x,y}=drag; drag=null; card.style.transition="";
+          const TH=82;
+          if(y>TH && y>Math.abs(x)) decide(card,"down");
+          else if(x>TH) decide(card,"right");
+          else if(x<-TH) decide(card,"left");
+          else { card.style.transform=""; [sr,sl,sd].forEach(s=>s.style.opacity=0); }
+        };
+        card.addEventListener("pointerdown",onDown); card.addEventListener("pointermove",onMove);
+        card.addEventListener("pointerup",onUp); card.addEventListener("pointercancel",onUp);
+      }
+
+      function tapDecision(dir){
+        if(!ready || !topEl){
+          toast("等卡牌亮完再选");
+          return;
+        }
+        decide(topEl, dir);
+      }
+
+      function updateGestureButtons(){
+        document.querySelectorAll("[data-act]").forEach(btn=>{ btn.disabled = !ready; });
+      }
+
+      function decide(card,dir){
+        ready=false; updateGestureButtons(); const top=deck[0];
+        if(dir==="right"){ card.classList.add("flyR"); setTimeout(()=>win(top,false),250); return; }
+        if(dir==="left"){
+          // No / 待定：本轮不再进入卡牌池，留作命运结算的候选（不会再转回来）
+          card.classList.add("flyL");
+          setTimeout(()=>{ pending.push(deck.shift()); afterRemove("Pass · 待定 +1"); },280); return;
+        }
+        if(dir==="down"){
+          // 扔进下水道：永久拉黑，不作为候选
+          const pipeRect=$("#pipe").getBoundingClientRect(), cardRect=card.getBoundingClientRect();
+          const dx=(pipeRect.left+pipeRect.width/2)-(cardRect.left+cardRect.width/2);
+          const dy=(pipeRect.top+6)-(cardRect.top+cardRect.height/2);
+          card.classList.add("intoPipe");
+          requestAnimationFrame(()=>{ card.style.transform=`translate(${dx}px,${dy}px) scale(.18)`; });
+          gulp();
+          setTimeout(()=>{ deck.shift(); afterRemove("Bye bye · 永久拉黑"); },520);
+        }
+      }
+
+      function gulp(){ const p=$("#pipe"); p.style.transition="transform .14s"; p.style.transform="translateY(6px)"; setTimeout(()=>{ p.style.transform=""; },160); }
+
+      function afterRemove(msg){
+        toast(msg);
+        if(deck.length===0){ settleByFate(); }   // 5 次机会用完 → 命运结算
+        else { renderDeck(); dealRound(); }
+      }
+
+      // 五张机会用完仍没「就它」：大字提示 + 从被左滑(待定)的里随机定一个；全拉黑了就从本局全部里兜底随机
+      function settleByFate(){
+        const candidates = pending.length ? pending : activePool;
+        const pick = candidates[Math.floor(Math.random()*candidates.length)];
+        win(pick, true);
+      }
+
+      function win(c, byFate){
+        const wf = $("#wFace");
+        if(c.image){ wf.textContent=""; wf.classList.add("photo"); wf.style.background=`linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.26)), url('${cssUrl(c.image)}') center/cover`; }
+        else { wf.classList.remove("photo"); wf.textContent=c.emoji; wf.style.background=`repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 2px, transparent 2px 14px), ${c.art}`; }
+        const settle = byFate ? (MODE_SETTLE_COPY[mode] || "就它了！") : "就它了！";
+        const sEl=$("#wSettle"); if(sEl) sEl.textContent=settle;
+        $("#wName").textContent=c.name;
+        $("#wReason").textContent=(c.slogan ? c.slogan+"。 " : "")+c.reason;
+        $("#wMeta").innerHTML=(c.meta||[]).map(m=>`<span class="mtag">${escapeHTML(m)}</span>`).join("");
+        const nav=$("#wNav");
+        if(nav) nav.onclick=()=>{ const url = cardNavigationUrl(c); if(url) openNavigationUrl(url); else alert("原型示例：暂无导航地址"); };
+        $("#win").classList.add("show"); confetti();
+      }
+
+      function confetti(){
+        const layer=$("#confetti"); const colors=["#ff5a4d","#6c5ce7","#f6c518","#28c76f","#3d6bff","#1a1714"];
+        for(let i=0;i<90;i++){ const d=document.createElement("div"); d.className="conf";
+          d.style.background=colors[i%colors.length]; d.style.left=Math.random()*100+"%"; d.style.top="-20px";
+          d.style.borderRadius=Math.random()>.5?"2px":"50%";
+          const dur=1.6+Math.random()*1.6, delay=Math.random()*.5;
+          d.style.animation=`fall ${dur}s ${delay}s cubic-bezier(.3,.6,.5,1) forwards`;
+          d.style.transform=`rotate(${Math.random()*360}deg)`;
+          layer.appendChild(d); setTimeout(()=>d.remove(),(dur+delay)*1000+200);
+        }
+      }
+
+      let toastT=null;
+      function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1200); }
+      function resetAll(){ $("#win").classList.remove("show"); $("#confetti").innerHTML=""; updatePill(); go("game"); }
+
+      // ---- 配置页：照片→游戏像素小头像、定位、自定义语音输入 ----
+      const CUTE = ["🍄","👾","🐸","🦖","🐤","👻","🤖","🐱","🐙","⭐","🎈","🍙"];
+      let playerEmoji = CUTE[Math.floor(Math.random() * CUTE.length)];
+      let photoData = "";
+      let avatarSrc = "";   // 从图库选中的像素角色图
+      let playerName = "";  // 角色姓名（可空；写了则显示在头像旁）
+      const photo = $("#photo"), slot = $("#avatarSlot"), canv = $("#avatarCanvas"), avatarPic = $("#avatarPic");
+      slot.addEventListener("click", () => photo.click());
+      // 上传原图 → 展示预生成的像素头像（演示版，短暂"生成中"后揭晓）
+      let avatarBusy = false;
+      photo.addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f || avatarBusy) { e.target.value = ""; return; }
+        avatarBusy = true;
+        slot.classList.remove("set", "pic"); slot.classList.add("loading");
+        toast("正在生成你的像素头像…");
+        const reveal = () => {
+          photoData = ""; avatarSrc = PIXEL_AVATAR;
+          slot.classList.remove("loading"); slot.classList.add("pic");
+          if (avatarPic) avatarPic.src = PIXEL_AVATAR;
+          document.querySelectorAll(".gAv").forEach((x) => x.classList.remove("on"));
+          updatePill();
+          toast("像素头像已生成 ✨");
+          avatarBusy = false;
+        };
+        // 预加载好图片再揭晓，避免闪烁；至少停留 900ms 营造"生成中"感
+        let loaded = false, waited = false, done = false;
+        const maybe = () => { if (loaded && waited && !done) { done = true; reveal(); } };
+        const pre = new Image();
+        pre.onload = () => { loaded = true; maybe(); };
+        pre.onerror = () => { loaded = true; maybe(); };
+        pre.src = PIXEL_AVATAR;
+        setTimeout(() => { waited = true; maybe(); }, 900);
+        e.target.value = "";
+      });
+
+      // 选择页：如果旧模板里还带着图片输入，降级为缩略图展示
+      const choicePhotoInput = document.getElementById("choicePhoto");
+      if(choicePhotoInput) choicePhotoInput.addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const img = document.createElement("img");
+        img.className = "thumb";
+        img.src = URL.createObjectURL(f);
+        $("#choiceThumbs").appendChild(img);
+        toast("已添加图片，会一起作为选择依据");
+        e.target.value = "";
+      });
+
+      $("#choiceTags").addEventListener("click", (e) => {
+        const chip = e.target.closest(".chip");
+        if (!chip) return;
+        chip.classList.toggle("on");
+        syncChoiceTags();
+        invalidateRestaurantIntent();
+      });
+
+      $("#choiceInput").addEventListener("input", invalidateRestaurantIntent);
+
+      function syncChoiceTags(){
+        const input = $("#choiceInput");
+        const selected = Array.from(document.querySelectorAll("#choiceTags .chip.on")).map((chip)=>chip.dataset.tag).filter(Boolean);
+        const tagLine = selected.length ? `标签：${selected.join("、")}` : "";
+        const base = input.value.replace(/\n?标签：.*$/u, "").trimEnd();
+        input.value = [base, tagLine].filter(Boolean).join("\n");
+        input.focus();
+      }
+
+      function getChoiceContext(){
+        const chips = Array.from(document.querySelectorAll("#choiceTags .chip.on"));
+        const question = cleanChoiceQuestion($("#choiceInput")?.value || "");
+        return {
+          question,
+          scenes: chips.filter((chip)=>chip.dataset.kind === "scene").map((chip)=>chip.dataset.tag).filter(Boolean),
+          needs: chips.filter((chip)=>chip.dataset.kind === "need").map((chip)=>chip.dataset.tag).filter(Boolean),
+          tags: chips.map((chip)=>chip.dataset.tag).filter(Boolean)
+        };
+      }
+      function cleanChoiceQuestion(value){
+        return String(value || "").replace(/\n?标签：.*$/su, "").trim();
+      }
+
+      function invalidateRestaurantIntent({ keepVoiceInsight = false } = {}){
+        restaurantContext = null;
+        restaurantContextPromise = null;
+        restaurantSearchPlan = null;
+        restaurantSearchPlanSignature = "";
+        restaurantSearchPlanPromise = null;
+        if(!keepVoiceInsight) resetVoiceInsight();
+      }
+
+      // 性别单选
+      $("#genderChips").addEventListener("click", (e) => {
+        if (!e.target.classList.contains("chip")) return;
+        [...e.currentTarget.children].forEach((c) => c.classList.remove("on"));
+        e.target.classList.add("on");
+      });
+
+      function updatePill() {
+        const p = $("#playerPill");
+        const src = photoData || avatarSrc;
+        if (src) { p.textContent = ""; p.style.backgroundImage = `url("${src}")`; p.classList.add("img"); }
+        else { p.style.backgroundImage = ""; p.classList.remove("img"); p.textContent = playerEmoji; }
+      }
+      function applyName() {
+        const v = (($("#playerNameInput") || {}).value || "").trim().slice(0, 12);
+        playerName = v;
+        const el = $("#playerName"); if (el) el.textContent = v;
+      }
+      function skipConfig() { if (!photoData && !avatarSrc) playerEmoji = CUTE[Math.floor(Math.random() * CUTE.length)]; applyName(); updatePill(); toast("已用随机像素形象"); go("game"); }
+      function finishConfig() { applyName(); updatePill(); go("game"); }
+
+      // 语音输入（Web Speech API；不支持则提示打字）
+      let recog = null, recBtn = null, voiceInsightSeq = 0;
+      function startVoice(targetId, btn) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { toast("此浏览器不支持语音，可直接打字"); return; }
+        if (recog) { recog.stop(); return; }
+        const t = document.getElementById(targetId); const base = t.value;
+        let latestVoiceText = "";
+        let voiceHadError = false;
+        recog = new SR(); recBtn = btn; recog.lang = "zh-CN"; recog.interimResults = true; recog.continuous = false;
+        btn.classList.add("rec"); toast("请说话…");
+        recog.onresult = (e) => {
+          let s = "";
+          for (const r of e.results) s += r[0].transcript;
+          latestVoiceText = s.trim();
+          t.value = (base ? base + " " : "") + s;
+          if(targetId === "choiceInput") invalidateRestaurantIntent({ keepVoiceInsight: true });
+        };
+        recog.onend = () => {
+          if (recBtn) recBtn.classList.remove("rec");
+          recog = null;
+          if(!voiceHadError && targetId === "choiceInput" && latestVoiceText) renderVoiceRestaurantIntent(latestVoiceText);
+        };
+        recog.onerror = () => { voiceHadError = true; if (recBtn) recBtn.classList.remove("rec"); recog = null; toast("没听清，再试一次"); };
+        recog.start();
+      }
+
+      function resetVoiceInsight(){
+        voiceInsightSeq++;
+        const box = $("#voiceInsight");
+        if(box) box.hidden = true;
+      }
+      function setVoiceInsight({ transcript = "", intent = "", keywords = "", state = "ready" } = {}){
+        const box = $("#voiceInsight");
+        if(!box) return;
+        box.hidden = false;
+        box.dataset.state = state;
+        $("#voiceTranscriptText").textContent = transcript || "刚才这句没有识别到有效内容";
+        $("#voiceIntentText").textContent = intent || "正在拆解餐厅需求…";
+        $("#voiceKeywordText").textContent = keywords || "生成中";
+      }
+      async function renderVoiceRestaurantIntent(transcript){
+        const cleanTranscript = String(transcript || "").trim();
+        if(!cleanTranscript) return;
+        const seq = ++voiceInsightSeq;
+        setVoiceInsight({ transcript: cleanTranscript, intent: "DeepSeek 正在拆解餐厅类型、价格和位置", keywords: "生成中", state: "loading" });
+        try{
+          const plan = await aiRestaurantSearchPlan(getChoiceContext(), lastCoords, { silent: true });
+          if(seq !== voiceInsightSeq) return;
+          setVoiceInsight({
+            transcript: cleanTranscript,
+            intent: voicePlanIntentText(plan),
+            keywords: voicePlanKeywordText(plan),
+            state: plan.source === "local" ? "fallback" : "ready"
+          });
+        }catch(err){
+          console.warn("Voice restaurant intent unavailable", err);
+          if(seq !== voiceInsightSeq) return;
+          const fallback = localRestaurantSearchPlan(getChoiceContext());
+          setVoiceInsight({ transcript: cleanTranscript, intent: voicePlanIntentText(fallback), keywords: voicePlanKeywordText(fallback), state: "fallback" });
+        }
+      }
+      function voicePlanKeywordText(plan = {}){
+        const strategyKeywords = Array.isArray(plan.keywordStrategy)
+          ? plan.keywordStrategy.map((item)=>cleanRestaurantKeyword(item?.keyword || item?.query || item?.searchKeyword || item)).filter(Boolean)
+          : [];
+        const requestKeywords = Array.isArray(plan.searchRequests) ? plan.searchRequests.map((item)=>cleanRestaurantKeyword(item?.keyword)).filter(Boolean) : [];
+        const baseKeywords = Array.isArray(plan.keywords) ? plan.keywords : String(plan.keywords || "").split(/[、,，;；/|\s]+/);
+        const keywords = uniqueKeywords([...strategyKeywords, ...baseKeywords, ...requestKeywords].map(cleanRestaurantKeyword).filter(Boolean))
+          .filter((keyword)=>keyword !== RESTAURANT_KEYWORD_FALLBACK);
+        return (keywords.length ? keywords : [RESTAURANT_KEYWORD_FALLBACK]).slice(0, 6).join("、");
+      }
+      function voicePlanIntentText(plan = {}){
+        const scene = plan.sceneIntent?.primaryScenario || plan.sceneIntent?.scenario || plan.sceneIntent?.name || "";
+        const types = restaurantTypeIntentText(plan.restaurantTypeIntent);
+        const location = voicePlanLocationText(plan);
+        const price = priceIntentText(plan);
+        const parts = uniqueKeywords([scene, types, location, price, plan.explanation].map((item)=>String(item || "").trim()).filter(Boolean));
+        return parts.slice(0, 4).join(" · ") || "餐厅推荐";
+      }
+      function restaurantTypeIntentText(intent){
+        if(!intent) return "";
+        if(typeof intent === "string") return intent;
+        const categories = Array.isArray(intent.categories) ? intent.categories : [];
+        return uniqueKeywords([intent.primaryType, intent.type, intent.category, ...categories].map((item)=>String(item || "").trim()).filter(Boolean)).slice(0, 3).join("、");
+      }
+      function voicePlanLocationText(plan = {}){
+        if(plan.locationHint) return `${plan.locationHint}附近`;
+        if(Array.isArray(plan.locationHints) && plan.locationHints.length >= 2) return `${plan.locationHints.slice(0, 3).join(" / ")}折中`;
+        const intent = plan.locationIntent;
+        if(typeof intent === "string") return intent;
+        return intent?.strategy || intent?.targetArea || intent?.area || "";
+      }
+      function priceIntentText(plan = {}){
+        const intent = plan.priceIntent;
+        if(typeof intent === "string") return intent;
+        const values = [intent?.tier, intent?.range, intent?.budget, intent?.description].map((item)=>String(item || "").trim()).filter(Boolean);
+        if(values.length) return values[0];
+        if(plan.minCost && plan.maxCost) return `人均${plan.minCost}-${plan.maxCost}`;
+        if(plan.minCost) return `人均${plan.minCost}+`;
+        return "";
+      }
+
+      // 头像图库：像素角色图（切片自素材图，存放在 avatars/）
+      const GALLERY = Array.from({length:18},(_,i)=>`avatars/av${i+1}.png`);
+      function buildGallery(){
+        const g = $("#avatarGallery"); if(!g) return;
+        g.innerHTML = GALLERY.map(src=>`<button type="button" class="gAv" data-src="${src}"><img src="${src}" alt="" /></button>`).join("");
+        g.addEventListener("click",(e)=>{ const b=e.target.closest(".gAv"); if(b) selectAvatar(b.dataset.src, b); });
+        // 默认选中第一个像素角色
+        selectAvatar(GALLERY[0], g.firstElementChild);
+      }
+      function selectAvatar(src, btn){
+        avatarSrc = src; photoData = "";
+        slot.classList.remove("set"); slot.classList.add("pic");
+        if(avatarPic) avatarPic.src = src;
+        document.querySelectorAll(".gAv").forEach(x=>x.classList.remove("on"));
+        if(btn) btn.classList.add("on");
+        updatePill();
+      }
+      buildGallery();
+
+      updatePill();
+      // ===== 真实餐厅管线（移植自 preview.html）=====
+      function renderLoadingDeck(title, text, progress){
+        const el=$("#deck");
+        const progressHTML = progress ? loadingProgressHTML(progress) : "";
+        el.innerHTML=`<div class="gcard loadingCard" style="z-index:10"><div class="spinner"></div><strong>${escapeHTML(title)}</strong><p>${escapeHTML(text)}</p>${progressHTML}</div>`;
+        $("#leftN").textContent="..."; $("#pips").innerHTML="";
+        updateGestureButtons();
+      }
+      function loadingProgressHTML({ done = 0, total = 5 } = {}){
+        const safeTotal = Math.max(1, Number(total) || 5);
+        const safeDone = Math.max(0, Math.min(safeTotal, Number(done) || 0));
+        const percent = Math.round((safeDone / safeTotal) * 100);
+        return `<div class="loadingProgress" style="--progress:${percent}%"><span></span></div><div class="loadingCount pixel">${safeDone}/${safeTotal} READY</div>`;
+      }
+      function setLocationStatus(text, state = "idle", meta = ""){
+        const el = $("#locationStatus");
+        if(!el) return;
+        el.dataset.state = state;
+        const target = el.querySelector("span") || el;
+        target.innerHTML = meta ? `<strong>${escapeHTML(text)}</strong><small>${escapeHTML(meta)}</small>` : `<strong>${escapeHTML(text)}</strong>`;
+      }
+      function updateLocationStatus(coords, source = "city"){
+        const lat = Number(coords?.lat), lng = Number(coords?.lng);
+        const label = coords?.label || (source === "gps" ? "正在解析街道…" : "当前城市");
+        const state = source === "gps" ? "gps" : "city";
+        if(source !== "gps") locationStatusSeq++;
+        if(source === "gps"){
+          setLocationStatus(`当前位置：${label}`, state);
+        }else{
+          setLocationStatus(`城市定位：${label}`, state, "当前为城市级定位，暂未获取区、街道和道路");
+        }
+        if(source === "gps" && Number.isFinite(lat) && Number.isFinite(lng)) enrichLocationStatus(coords);
+      }
+      async function enrichLocationStatus(coords){
+        const seq = ++locationStatusSeq;
+        try{
+          const detail = await reverseGeocodeLocation(coords);
+          if(seq !== locationStatusSeq || !detail) return;
+          const title = typeof detail === "string" ? detail : detail.title;
+          const meta = typeof detail === "string" ? "" : detail.meta;
+          setLocationStatus(`当前位置：${title}`, "gps", meta);
+          if(lastCoords && sameRestaurantCoords(lastCoords, coords)){
+            lastCoords = { ...lastCoords, label: title, addressMeta: meta };
+          }
+          coords.label = title;
+          coords.addressMeta = meta;
+        }catch(err){
+          console.warn("Detailed location unavailable", err);
+        }
+      }
+      function primeLocationStatus(){
+        if(lastCoords){ updateLocationStatus(lastCoords, lastCoords.accuracy ? "gps" : "city"); return Promise.resolve(lastCoords); }
+        if(locationStatusPromise) return locationStatusPromise;
+        setLocationStatus("定位：正在获取当前位置…", "loading");
+        locationStatusPromise = getCurrentPosition()
+          .then((coords)=>{ lastCoords = coords; updateLocationStatus(coords, "gps"); return coords; })
+          .catch(()=>getApproxPosition()
+            .then((coords)=>{ updateLocationStatus(coords, "city"); return coords; })
+            .catch(()=>{ setLocationStatus("定位：暂时未获取，开局时再试", "error"); return null; }))
+          .finally(()=>{ locationStatusPromise = null; });
+        return locationStatusPromise;
+      }
+      async function reverseGeocodeLocation(coords){
+        const center = coords?.amap ? coords : await convertToAmap(coords);
+        const lat = Number(center?.lat), lng = Number(center?.lng);
+        if(!Number.isFinite(lat) || !Number.isFinite(lng)) return "";
+        const data = await amapJsonp("https://restapi.amap.com/v3/geocode/regeo", {
+          key: AMAP_WEB_SERVICE_KEY,
+          location: `${lng.toFixed(6)},${lat.toFixed(6)}`,
+          radius: "1000",
+          extensions: "base",
+          roadlevel: "0",
+          output: "json"
+        });
+        if(data.status !== "1") throw new Error(data.info || "高德逆地理编码失败");
+        const regeocode = data.regeocode || {};
+        const component = regeocode.addressComponent || {};
+        const province = amapAddressText(component.province);
+        const city = amapAddressText(component.city);
+        const district = amapAddressText(component.district);
+        const township = amapAddressText(component.township);
+        const street = amapAddressText(component.streetNumber?.street);
+        const streetNo = amapAddressText(component.streetNumber?.number);
+        const neighborhood = amapAddressText(component.neighborhood?.name || component.neighborhood);
+        const building = amapAddressText(component.building?.name || component.building);
+        const formatted = String(regeocode.formatted_address || "").replace(/^中国/, "").trim();
+        const componentAddress = compactLocationParts([
+          province,
+          city,
+          district,
+          township,
+          [street, streetNo].filter(Boolean).join("")
+        ]).join("");
+        const title = (formatted || componentAddress).slice(0, 90);
+        const meta = compactLocationParts([
+          city || province,
+          district,
+          township,
+          street,
+          streetNo,
+          neighborhood,
+          building
+        ]).join(" · ").slice(0, 90);
+        return title ? { title, meta } : null;
+      }
+      function amapAddressText(value){
+        if(Array.isArray(value)) return String(value[0] || "").trim();
+        return String(value || "").trim();
+      }
+      function compactLocationParts(parts){
+        const seen = new Set();
+        return parts.map((part)=>String(part || "").trim()).filter(Boolean).filter((part)=>{
+          const key = normalizeMatchText(part);
+          if(!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      function getCurrentPosition(){
+        if(!("geolocation" in navigator)) return Promise.reject(new Error("当前浏览器不支持定位"));
+        return new Promise((resolve,reject)=>{
+          navigator.geolocation.getCurrentPosition(
+            (pos)=>resolve({ lat:Number(pos.coords.latitude.toFixed(6)), lng:Number(pos.coords.longitude.toFixed(6)), accuracy:Math.round(pos.coords.accuracy || 0) }),
+            (err)=>reject(new Error(locationErrorText(err))),
+            { enableHighAccuracy:true, maximumAge:1000*60*3, timeout:8000 }
+          );
+        });
+      }
+      function locationErrorText(err){
+        if(err && err.code===1) return "你拒绝了定位，改用城市定位";
+        if(err && err.code===2) return "暂时拿不到当前位置，改用城市定位";
+        if(err && err.code===3) return "定位超时，改用城市定位";
+        return "定位失败，改用城市定位";
+      }
+
+      function ensureRestaurantContext({ silent = false, modeName = mode } = {}){
+        const searchKey = restaurantSearchSignature(modeName);
+        if(restaurantContext?.pois?.length && restaurantContext.searchKey === searchKey) return Promise.resolve(restaurantContext);
+        if(restaurantContextPromise?.searchKey === searchKey) return restaurantContextPromise;
+        restaurantContextPromise = fetchRestaurantContext({ silent, searchKey, modeName }).finally(()=>{ restaurantContextPromise = null; });
+        restaurantContextPromise.searchKey = searchKey;
+        return restaurantContextPromise;
+      }
+
+      async function fetchRestaurantContext({ silent = false, searchKey = restaurantSearchSignature(mode), modeName = mode } = {}){
+        const choice = getChoiceContext();
+        let coords;
+        try { setLocationStatus("定位：正在获取 GPS…", "loading"); coords = await getCurrentPosition(); updateLocationStatus(coords, "gps"); }
+        catch(e){ if(!silent) toast(e.message || "定位失败，改用城市定位"); setLocationStatus("定位：GPS 不可用，改用城市定位", "error"); coords = await getApproxPosition(); updateLocationStatus(coords, "city"); }
+        lastCoords = coords;
+        const searchPlan = await restaurantSearchPlanForMode(modeName, choice, coords, { silent });
+        const destination = await resolveRestaurantDestinationContext(coords, searchPlan, choice);
+        const meetup = destination ? null : await resolveRestaurantMeetupContext(coords, searchPlan, choice);
+        const searchCoords = destination?.searchCoords || meetup?.searchCoords || await resolveRestaurantSearchCoords(coords, searchPlan);
+        const searchKeywords = searchPlan.keywords;
+        const searchOptions = restaurantSearchOptions(searchPlan);
+        const minCost = searchOptions.minCost;
+        const maxCost = searchOptions.maxCost;
+        const radius = destination?.radiusMeters || meetup?.radiusMeters || searchPlan.radiusMeters || 3500;
+        if(!silent) toast(restaurantSearchToast(searchKeywords, meetup, destination));
+        const result = await searchRestaurantsWithFallback(searchCoords, radius, searchKeywords, searchOptions, meetup);
+        restaurantContext = { coords: result.coords, userCoords: coords, searchCoords, targetCoords: destination?.searchCoords || meetup?.searchCoords || null, pois: result.pois, searchKey, searchKeywords, searchPlan, searchOptions, destination, meetup, minCost, maxCost, modeName, fetchedAt: Date.now() };
+        if(!silent && restaurantContext.pois.length) toast(`已准备好 ${restaurantContext.pois.length} 家附近餐厅候选`);
+        return restaurantContext;
+      }
+
+      async function loadRestaurantCards(coords, preloadedPois, context = {}){
+        const choice = getChoiceContext();
+        const searchPlan = context.searchPlan || await restaurantSearchPlanForMode(mode, choice, coords, { silent: true });
+        const searchKeywords = context.searchKeywords || searchPlan.keywords;
+        const searchOptions = context.searchOptions || restaurantSearchOptions(searchPlan);
+        const minCost = context.minCost ?? searchOptions.minCost;
+        const maxCost = context.maxCost ?? searchOptions.maxCost;
+        const destination = context.destination || await resolveRestaurantDestinationContext(coords, searchPlan, choice);
+        const meetup = destination ? null : (context.meetup || await resolveRestaurantMeetupContext(coords, searchPlan, choice));
+        const radius = destination?.radiusMeters || meetup?.radiusMeters || searchPlan.radiusMeters || 3500;
+        const searchCoords = context.searchCoords || destination?.searchCoords || meetup?.searchCoords || coords;
+        let pois = Array.isArray(preloadedPois) && preloadedPois.length ? diverseRestaurantPois(preloadedPois, AMAP_PRICE_POOL_SIZE) : (await searchRestaurantsWithFallback(searchCoords, radius, searchKeywords, searchOptions, meetup)).pois;
+        if(meetup) pois = rankRestaurantPoisForMeetup(pois, meetup);
+        const cardOptions = { ...searchOptions, minCost, maxCost, userCoords: context.userCoords || coords, searchCoords, targetCoords: destination?.searchCoords || meetup?.searchCoords || context.targetCoords || null, destination, meetup };
+        let cards = restaurantCardsForMode(pois, cardOptions);
+        if(cards.length < TOTAL){ pois = (await searchRestaurantsWithFallback(searchCoords, Math.max(radius, 8000), searchKeywords, searchOptions, meetup)).pois; cards = restaurantCardsForMode(pois, cardOptions); }
+        return cards.slice(0,TOTAL);
+      }
+      function restaurantCardsForMode(pois, options = {}){
+        if(mode === "霸总模式") return poisToCards(topRatingPois(pois).slice(0, TOTAL), options);
+        if(mode === "玄学模式") return poisToCards(randomPick(pois, TOTAL), options);
+        return poisToCards(diverseRestaurantPois(pois, TOTAL), options);
+      }
+
+      function restaurantSearchSignature(modeName = mode){
+        const choice = getChoiceContext();
+        const locations = extractedRestaurantParticipantLocationNames(choice);
+        const destination = extractRestaurantDestinationHint(choice)?.name || "";
+        const targetHints = extractRestaurantParticipantTargetHints(choice);
+        return JSON.stringify({
+          mode: modeName,
+          question: modeName === "AI 模式" ? choice.question : "",
+          tags: modeName === "AI 模式" ? choice.tags : [],
+          locations,
+          destination,
+          targetHints,
+          version: "search-plan-v8"
+        });
+      }
+      async function restaurantSearchPlanForMode(modeName = mode, choice = getChoiceContext(), coords, { silent = false } = {}){
+        if(modeName !== "AI 模式") return localRestaurantSearchPlan(choice, { forceGeneric: true });
+        return aiRestaurantSearchPlan(choice, coords, { silent });
+      }
+      function restaurantSearchKeywords(choice = getChoiceContext()){
+        const raw = [];
+        const questionKeywords = extractRestaurantQuestionKeywords(choice.question);
+        const hasQuestionKeywords = questionKeywords.length > 0;
+        choice.tags.filter((tag)=>PRIORITY_TAGS.has(tag)).forEach(pushRestaurantTagKeywords);
+        questionKeywords.forEach((keyword)=>raw.push(keyword));
+        choice.tags.filter((tag)=>!PRIORITY_TAGS.has(tag)).forEach(pushRestaurantTagKeywords);
+        const text = [choice.question, choice.tags.join(" ")].join(" ");
+        FOOD_SEARCH_TERMS.forEach((term)=>{ if(text.toLowerCase().includes(term.toLowerCase())) raw.push(term); });
+        const cleaned = uniqueKeywords(raw.map(cleanRestaurantKeyword).filter(Boolean));
+        return limitRestaurantKeywords(cleaned, 6, { includeFallback: !hasQuestionKeywords });
+        function pushRestaurantTagKeywords(tag){
+          (TAG_SEARCH_KEYWORDS[tag] || [tag]).forEach((keyword)=>{
+            if(hasQuestionKeywords && keyword === RESTAURANT_KEYWORD_FALLBACK) return;
+            raw.push(keyword);
+          });
+        }
+      }
+      function extractRestaurantQuestionKeywords(question){
+        const text = cleanChoiceQuestion(question).replace(/\s+/g, " ");
+        const keywords = [];
+        const actionPattern = /(?:想吃|想要吃|要吃|吃点|吃|来点|找|搜|搜索|安排)([\u4e00-\u9fa5A-Za-z0-9]{1,12})/g;
+        let match;
+        while((match = actionPattern.exec(text))){
+          const keyword = normalizeQuestionFoodKeyword(match[1]);
+          if(keyword) keywords.push(keyword);
+        }
+        FOOD_SEARCH_TERMS.forEach((term)=>{ if(text.toLowerCase().includes(term.toLowerCase())) keywords.push(term); });
+        return uniqueKeywords(keywords.map(cleanRestaurantKeyword).filter(Boolean)).slice(0, 4);
+      }
+      function normalizeQuestionFoodKeyword(value){
+        let keyword = String(value || "").replace(/^(点|个|家|些|一点|一家)/, "").replace(/(附近|周边|餐厅|饭店|店|馆|人均.*|便宜|贵|安静|好聊|少排队).*$/u, "").trim();
+        if(!keyword || /^(饭|饭饭|东西|什么|啥|随便|都行)$/.test(keyword)) return "";
+        return keyword;
+      }
+      function cleanRestaurantKeyword(keyword){
+        const value = String(keyword || "").replace(/标签：.*/u, "").replace(/[，,。.!！?？；;:：]/g, " ").trim();
+        if(!value || /^(人均.*|离我近|少排队)$/.test(value)) return "";
+        return value.slice(0, 12);
+      }
+      function cleanRestaurantLocationHint(value){
+        const cleaned = String(value || "")
+          .replace(/标签：.*/u, "")
+          .replace(/[，,。.!！?？；;:：]/g, " ")
+          .replace(/^.+(?:住在|出发地是|位置在|位置是|在|从|出发)(?=.{2,}$)/u, "")
+          .replace(/^(?:想去|想到|要去|希望去|打算去|准备去|倾向去|想在|想约在|想选在|想定在|去|到)\s*/u, "")
+          .replace(/^(?:(?:我|本人|对方|朋友|同事|他|她|一个人|另一个人|一位|另一位|A|B)(?:住在|出发地是|位置在|位置是|在|从|出发)?|(?:住在|出发地是|位置在|位置是|在|出发))/i, "")
+          .replace(/(?:附近|周边|这边|那边)(?:吃饭|吃|找|搜|搜索|安排|看看|餐厅|饭店)?.*$/u, "")
+          .replace(/(?:附近|周边|这边|那边|出发|上班|下班|过去|过来)$/u, "")
+          .trim();
+        if(!cleaned || /^(附近|周边|当前位置|当前城市|中间|中间点|折中|餐厅|饭店|吃饭)$/.test(cleaned)) return "";
+        if(isInvalidRestaurantLocationHint(cleaned)) return "";
+        return cleaned.slice(0, 24);
+      }
+      function isInvalidRestaurantLocationHint(value){
+        const text = String(value || "").trim();
+        const key = normalizeMatchText(text);
+        if(!key) return true;
+        if(/^(你|我|本人|自己|你自己|我自己|当前位置|当前定位|定位地址|定位|gps|已定位|已获取)$/.test(key)) return true;
+        return /(?:你自己|我自己|自己|当前位置|当前定位).{0,8}(?:获取|定位|拿到)/.test(key);
+      }
+      function cleanRestaurantDestinationHint(value){
+        const withoutNearbyTail = String(value || "")
+          .replace(/(?:附近|周边|这边|那边)(?:吃饭|吃|找|搜|搜索|安排|看看|餐厅|饭店)?.*$/u, "")
+          .replace(/(?:吃饭|餐厅|饭店).*$/u, "");
+        return cleanRestaurantLocationHint(withoutNearbyTail);
+      }
+      function extractRestaurantDestinationHint(choice = getChoiceContext()){
+        const text = cleanChoiceQuestion(choice.question || "").replace(/\s+/g, " ");
+        if(extractRestaurantParticipantTargetHints(choice).length >= 2) return null;
+        const hints = [];
+        const collect = (match, valueIndex = 1)=>{
+          const start = match.index + match[0].indexOf(match[valueIndex]);
+          if(isParticipantLocationContext(text, start)) return;
+          const hint = cleanRestaurantDestinationHint(match[valueIndex]);
+          if(hint) hints.push(hint);
+        };
+        const destinationPatterns = [
+          new RegExp(`(?:目的地|见面地|集合地|会合地|碰头地|吃饭地点|吃饭地|地点|位置|区域|商圈)(?:定在|选在|放在|在|是|到)?\\s*${RESTAURANT_LOCATION_CAPTURE}`, "gi"),
+          new RegExp(`(?:定在|约在|聚在|集合在|会合在|碰头在|见面在|就在|想去|想到|要去|希望去|打算去|准备去|去|到)\\s*${RESTAURANT_LOCATION_CAPTURE}`, "gi"),
+          /(?:在|到|去)?\s*([\u4e00-\u9fa5A-Za-z0-9·\-]{2,24})(?:附近|周边|这边|那边)(?:吃饭|吃|找|搜|搜索|安排|看看|餐厅|饭店)/gi
+        ];
+        for(const pattern of destinationPatterns){
+          let match;
+          while((match = pattern.exec(text))) collect(match);
+        }
+        const name = uniqueRestaurantLocationHints(hints)[0];
+        return name ? { name } : null;
+      }
+      function isParticipantLocationContext(text, index){
+        const before = text.slice(Math.max(0, index - 14), index);
+        return /(?:我|本人|朋友|对方|他|她|同事|一个人|另一个人|一位|另一位|a|b)\s*(?:在|住在|从|出发地是|出发|位置在|位置是)?\s*$/i.test(before);
+      }
+      function extractRestaurantParticipantTargetHints(choice = getChoiceContext()){
+        const text = cleanChoiceQuestion(choice.question || "").replace(/\s+/g, " ");
+        const hints = [];
+        const targetVerbPattern = "(?:想去|想到|要去|希望去|打算去|准备去|倾向去|想在|想约在|想选在|想定在)";
+        const pattern = new RegExp(`(${RESTAURANT_ACTOR_PATTERN})([\\s\\S]{0,18}?${targetVerbPattern})\\s*${RESTAURANT_LOCATION_CAPTURE}`, "gi");
+        let match;
+        while((match = pattern.exec(text))){
+          const bridge = match[2] || "";
+          if(hasInterveningRestaurantActor(bridge)) continue;
+          const hint = cleanRestaurantDestinationHint(match[3]);
+          if(hint) hints.push(hint);
+        }
+        return uniqueRestaurantLocationHints(hints);
+      }
+      function hasInterveningRestaurantActor(value){
+        const bridge = String(value || "").replace(/(?:想去|想到|要去|希望去|打算去|准备去|倾向去|想在|想约在|想选在|想定在).*$/u, "");
+        return /(?:朋友|对方|同事|他|她|另一个人|另一位|我们|咱们|大家|一起)/.test(bridge);
+      }
+      function hasRestaurantMeetupIntent(choice = getChoiceContext()){
+        const text = cleanChoiceQuestion(`${choice.question || ""} ${(choice.tags || []).join(" ")}`);
+        return /(?:朋友|对象|男朋友|女朋友|男友|女友|对方|同事|他|她|我们|咱们|大家|一起|一块|见面|碰头|集合|会合|约饭|聚餐|找个地方)/.test(text);
+      }
+      function shouldUseCurrentLocationForMeetup(choice = getChoiceContext(), hints = extractedRestaurantParticipantLocationNames(choice)){
+        const cleanHints = uniqueRestaurantLocationHints(hints);
+        if(cleanHints.length !== 1) return false;
+        if(!hasRestaurantMeetupIntent(choice)) return false;
+        if(extractRestaurantParticipantTargetHints(choice).length >= 2) return false;
+        return !extractRestaurantDestinationHint(choice)?.name;
+      }
+      function extractRestaurantLocationHints(choice = getChoiceContext()){
+        const targetHints = extractRestaurantParticipantTargetHints(choice);
+        if(targetHints.length >= 2) return targetHints.map((name)=>({ name }));
+        const text = cleanChoiceQuestion(choice.question || "");
+        const hints = [];
+        const relationPattern = /(?:(?:(?:我|本人|朋友|对方|他|她|同事|一个人|另一个人|一位|另一位|a|b)\s*(?:在|住在|从|出发地是|出发|位置在|位置是))|(?:在|住在|出发地是|出发|位置在|位置是))\s*([\u4e00-\u9fa5A-Za-z0-9·\-]{2,24})/gi;
+        let match;
+        while((match = relationPattern.exec(text))){
+          const hint = cleanRestaurantLocationHint(match[1]);
+          if(hint) hints.push(hint);
+        }
+        const suffixPattern = new RegExp(`([\\u4e00-\\u9fa5A-Za-z0-9·\\-]{2,18}${LOCATION_SUFFIX_PATTERN})`, "g");
+        while((match = suffixPattern.exec(text))){
+          const hint = cleanRestaurantLocationHint(match[1]);
+          if(hint) hints.push(hint);
+        }
+        return uniqueRestaurantLocationHints(hints).map((name)=>({ name }));
+      }
+      function extractedRestaurantParticipantLocationNames(choice = getChoiceContext()){
+        const targetHints = extractRestaurantParticipantTargetHints(choice);
+        if(targetHints.length >= 2) return targetHints;
+        const destinationKey = normalizeMatchText(extractRestaurantDestinationHint(choice)?.name || "");
+        return extractRestaurantLocationHints(choice)
+          .map((item)=>item.name)
+          .filter((name)=>!destinationKey || normalizeMatchText(name) !== destinationKey);
+      }
+      function normalizeRestaurantLocationHints(value){
+        const list = Array.isArray(value) ? value : String(value || "").split(/[、,，;；/|]+/);
+        return uniqueRestaurantLocationHints(list.map((item)=>cleanRestaurantLocationHint(typeof item === "string" ? item : (item?.name || item?.label || item?.location || item?.area))).filter(Boolean));
+      }
+      function uniqueRestaurantLocationHints(hints){
+        const seen = new Set();
+        return (hints || []).map(cleanRestaurantLocationHint).filter(Boolean).filter((hint)=>{
+          const key = normalizeMatchText(hint);
+          if(!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).slice(0, 4);
+      }
+      function uniqueKeywords(keywords){
+        const seen = new Set();
+        return keywords.filter((keyword)=>{
+          if(seen.has(keyword)) return false;
+          seen.add(keyword);
+          return true;
+        });
+      }
+      function limitRestaurantKeywords(keywords, limit = 6, { includeFallback = true } = {}){
+        const unique = uniqueKeywords((keywords || []).map(cleanRestaurantKeyword).filter(Boolean));
+        const specific = unique.filter((keyword)=>keyword !== RESTAURANT_KEYWORD_FALLBACK).slice(0, includeFallback ? Math.max(0, limit - 1) : limit);
+        return includeFallback ? [...specific, RESTAURANT_KEYWORD_FALLBACK] : specific;
+      }
+      function restaurantSearchToast(keywords, meetup, destination){
+        if(destination?.label){
+          return `正在找「${destination.label}」附近的餐厅`;
+        }
+        if(meetup?.participants?.length >= 2){
+          return `正在找「${meetup.participants.map((item)=>item.label).join(" / ")}」之间的折中餐厅`;
+        }
+        const visible = (keywords || []).filter((keyword)=>keyword !== RESTAURANT_KEYWORD_FALLBACK).slice(0, 2);
+        return visible.length ? `正在按「${visible.join("、")}」搜索附近餐厅` : "正在获取附近餐厅候选";
+      }
+      async function aiRestaurantSearchPlan(choice, coords, { silent = false } = {}){
+        const signature = JSON.stringify({ question: choice.question, tags: choice.tags, destination: extractRestaurantDestinationHint(choice)?.name || "", locations: extractedRestaurantParticipantLocationNames(choice), targetHints: extractRestaurantParticipantTargetHints(choice), coords: coords ? [coords.lat, coords.lng, coords.label || "", coords.addressMeta || ""] : null, version: "search-plan-v8" });
+        if(restaurantSearchPlan && restaurantSearchPlanSignature === signature) return restaurantSearchPlan;
+        if(restaurantSearchPlanPromise?.signature === signature) return restaurantSearchPlanPromise;
+        if(!silent) renderLoadingDeck("AI 正在拆解搜索条件", "把你的输入转成高德可用的关键词、价格和位置条件。");
+        restaurantSearchPlanPromise = fetchRestaurantSearchPlan(choice, coords).then((plan)=>{
+          const resolved = normalizeRestaurantSearchPlan(plan, choice);
+          if(!resolved.keywords.length) throw new Error("AI 没有返回有效搜索关键词");
+          restaurantSearchPlan = resolved;
+          restaurantSearchPlanSignature = signature;
+          return resolved;
+        }).catch((err)=>{
+          console.warn("AI restaurant search plan unavailable", err);
+          const fallback = localRestaurantSearchPlan(choice);
+          restaurantSearchPlan = fallback;
+          restaurantSearchPlanSignature = signature;
+          if(!silent) toast("AI 解析暂不可用，按标签搜索高德");
+          return fallback;
+        }).finally(()=>{ restaurantSearchPlanPromise = null; });
+        restaurantSearchPlanPromise.signature = signature;
+        return restaurantSearchPlanPromise;
+      }
+      async function fetchRestaurantSearchPlan(choice, coords){
+        const response = await fetch(RESTAURANT_SEARCH_PLAN_ENDPOINT, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            moduleId: "dinner",
+            question: choice.question,
+            scenes: choice.scenes,
+            needs: choice.needs,
+            tags: choice.tags,
+            locationHint: extractRestaurantDestinationHint(choice)?.name || "",
+            locationHints: extractedRestaurantParticipantLocationNames(choice),
+            location: coords,
+            currentLocationLabel: coords?.label || "",
+            currentLocationDetail: coords?.addressMeta || ""
+          })
+        });
+        const data = await response.json().catch(()=>null);
+        if(!response.ok || !data?.ok) throw new Error(data?.message || "AI 搜索条件解析失败");
+        return data.plan || data.searchPlan || data;
+      }
+      function normalizeRestaurantSearchPlan(plan, choice = getChoiceContext()){
+        const source = plan?.plan || plan?.searchPlan || plan || {};
+        const amapFields = source.amapFields || source.amapParams || source.amap || {};
+        const keywords = normalizePlanKeywords(source.keywords || source.searchKeywords || source.amapKeywords || source.tags);
+        const fallback = localRestaurantSearchPlan(choice);
+        const minCost = readPlanCost(source.minCost ?? source.min_price ?? source.minPrice);
+        const maxCost = readPlanCost(source.maxCost ?? source.max_price ?? source.maxPrice);
+        const minRating = readPlanRating(source.minRating ?? source.min_rating ?? source.ratingMin);
+        const resolvedMinCost = Number.isFinite(minCost) ? minCost : fallback.minCost;
+        const radius = source.radiusMeters || source.radius || source.radius_meters || amapFields.radiusMeters || amapFields.radius || amapFields.radius_meters;
+        const participantTargets = extractRestaurantParticipantTargetHints(choice);
+        const locationHints = normalizeRestaurantLocationHints(source.locationHints || source.locations || source.participantLocations || source.meetingLocations);
+        const fallbackLocationHints = extractedRestaurantParticipantLocationNames(choice);
+        const resolvedLocationHints = participantTargets.length >= 2 ? participantTargets : uniqueRestaurantLocationHints([...locationHints, ...fallbackLocationHints]);
+        const currentPlusFriendMeetup = shouldUseCurrentLocationForMeetup(choice, resolvedLocationHints);
+        const fallbackDestinationHint = participantTargets.length >= 2 || currentPlusFriendMeetup ? "" : (extractRestaurantDestinationHint(choice)?.name || "");
+        const sourceLocationHint = participantTargets.length >= 2 || currentPlusFriendMeetup ? "" : cleanRestaurantDestinationHint(source.locationHint || source.destinationHint || source.destination || source.area || source.landmark || "");
+        const inferredTypes = inferRestaurantAmapTypes([choice.question, choice.tags, keywords, source.restaurantTypeIntent, source.typeIntent].flat(Infinity).join(" "));
+        const resolved = {
+          keywords: keywords.length ? keywords : fallback.keywords,
+          minCost: resolvedMinCost,
+          maxCost: Number.isFinite(maxCost) && (!resolvedMinCost || maxCost >= resolvedMinCost) ? maxCost : 0,
+          radiusMeters: normalizeAmapRadius(radius, fallback.radiusMeters),
+          types: normalizeAmapTypes(source.types || source.typeCodes || source.amapTypes || amapFields.types || amapFields.typeCodes || inferredTypes),
+          sortrule: normalizeAmapSortRule(source.sortrule || source.sortRule || amapFields.sortrule || amapFields.sortRule || fallback.sortrule),
+          region: cleanRestaurantKeyword(source.region || amapFields.region || source.city || source.locationIntent?.region || source.locationIntent?.street || ""),
+          cityLimit: Boolean(source.cityLimit ?? source.city_limit ?? amapFields.cityLimit ?? amapFields.city_limit ?? (source.region || amapFields.region ? true : fallback.cityLimit)),
+          showFields: normalizeAmapShowFields(source.showFields || source.show_fields || amapFields.showFields || amapFields.show_fields),
+          minRating: Number.isFinite(minRating) ? minRating : fallback.minRating,
+          preferOpenLate: Boolean(source.preferOpenLate || source.openLate || source.lateNight || fallback.preferOpenLate),
+          openAtHour: readPlanHour(source.openAtHour || source.open_at_hour || source.openAt),
+          mustKeywords: normalizeSimpleKeywords(source.mustKeywords || source.includeKeywords || source.requiredKeywords, 8),
+          avoidKeywords: normalizeSimpleKeywords(source.avoidKeywords || source.excludeKeywords || source.negativeKeywords, 8),
+          locationHint: currentPlusFriendMeetup ? "" : (fallbackDestinationHint || sourceLocationHint || (resolvedLocationHints.length === 1 ? resolvedLocationHints[0] : fallback.locationHint)),
+          locationHints: resolvedLocationHints,
+          sceneIntent: source.sceneIntent || source.scenarioIntent || null,
+          keywordStrategy: Array.isArray(source.keywordStrategy) ? source.keywordStrategy.slice(0, 8) : [],
+          priceIntent: source.priceIntent || null,
+          locationIntent: source.locationIntent || null,
+          restaurantTypeIntent: source.restaurantTypeIntent || source.typeIntent || null,
+          explanation: String(source.explanation || source.reason || "").slice(0, 120),
+          source: source.source || "deepseek"
+        };
+        if(!resolved.region) resolved.cityLimit = false;
+        resolved.searchRequests = normalizePlanSearchRequests(source.searchRequests || source.queries || source.queryIntents, resolved.keywords, resolved);
+        if(participantTargets.length >= 2 || currentPlusFriendMeetup){
+          resolved.region = restaurantCityLabelFromText(resolved.region) ? resolved.region : "";
+          resolved.cityLimit = Boolean(resolved.region && resolved.cityLimit);
+          resolved.searchRequests = resolved.searchRequests.map((request)=>{
+            const region = restaurantCityLabelFromText(request.region) ? request.region : "";
+            return { ...request, region, cityLimit: Boolean(region && request.cityLimit) };
+          });
+        }
+        return resolved;
+      }
+      function localRestaurantSearchPlan(choice = getChoiceContext(), { forceGeneric = false } = {}){
+        const keywords = forceGeneric ? [RESTAURANT_KEYWORD_FALLBACK] : restaurantSearchKeywords(choice);
+        const locationHints = extractedRestaurantParticipantLocationNames(choice);
+        const currentPlusFriendMeetup = shouldUseCurrentLocationForMeetup(choice, locationHints);
+        const destinationHint = extractRestaurantParticipantTargetHints(choice).length >= 2 || currentPlusFriendMeetup ? "" : (extractRestaurantDestinationHint(choice)?.name || (locationHints.length === 1 ? locationHints[0] : ""));
+        const types = inferRestaurantAmapTypes([choice.question, choice.tags, keywords].flat().join(" ")) || "050000";
+        const radiusMeters = inferRestaurantSearchRadius(choice, { hasDestination: Boolean(destinationHint), participantCount: locationHints.length + (currentPlusFriendMeetup ? 1 : 0) });
+        const sortrule = inferRestaurantSortRule(choice);
+        const plan = {
+          keywords,
+          minCost: !forceGeneric && choice.tags.includes("人均150+") ? MIN_RESTAURANT_COST : 0,
+          maxCost: 0,
+          radiusMeters,
+          types,
+          sortrule,
+          region: "",
+          cityLimit: false,
+          showFields: AMAP_SHOW_FIELDS_DEFAULT,
+          minRating: 0,
+          preferOpenLate: !forceGeneric && choice.tags.includes("通宵熬夜"),
+          openAtHour: !forceGeneric && choice.tags.includes("通宵熬夜") ? 23 : 0,
+          mustKeywords: [],
+          avoidKeywords: [],
+          locationHint: destinationHint,
+          locationHints,
+          explanation: "",
+          source: "local"
+        };
+        plan.searchRequests = normalizePlanSearchRequests([], plan.keywords, plan);
+        return plan;
+      }
+      function normalizePlanKeywords(value){
+        return limitRestaurantKeywords(normalizeSimpleKeywords(value, 6), 6, { includeFallback: false });
+      }
+      function normalizeSimpleKeywords(value, limit = 8){
+        const list = Array.isArray(value) ? value : String(value || "").split(/[、,，;；/|\s]+/);
+        return uniqueKeywords(list.map(cleanRestaurantKeyword).filter(Boolean)).slice(0, limit);
+      }
+      function normalizeAmapTypes(value){
+        const list = Array.isArray(value) ? value : String(value || "").split(/[、,，;；/|]+/);
+        const codes = uniqueKeywords(list.map((item)=>String(item || "").trim()).filter((item)=>/^05\d{4}$/.test(item))).slice(0, 8);
+        return codes.length ? codes.join("|") : "050000";
+      }
+      function normalizeAmapSortRule(value){
+        const rule = String(value || "").toLowerCase();
+        if(rule === "weight" || /综合|权重|推荐/.test(rule)) return "weight";
+        return "distance";
+      }
+      function normalizeAmapShowFields(value){
+        const allowed = new Set(["children", "business", "indoor", "navi", "photos"]);
+        const fields = uniqueKeywords(String(value || AMAP_SHOW_FIELDS_DEFAULT).split(/[、,，;；/|]+/).map((item)=>item.trim()).filter((item)=>allowed.has(item))).slice(0, 5);
+        return fields.length ? fields.join(",") : AMAP_SHOW_FIELDS_DEFAULT;
+      }
+      function normalizeAmapRadius(value, fallback = 3500){
+        const radius = Number(value);
+        if(!Number.isFinite(radius)) return Math.max(AMAP_SEARCH_MIN_RADIUS, Math.min(AMAP_SEARCH_MAX_RADIUS, Math.round(Number(fallback) || 3500)));
+        return Math.max(AMAP_SEARCH_MIN_RADIUS, Math.min(AMAP_SEARCH_MAX_RADIUS, Math.round(radius)));
+      }
+      function inferRestaurantAmapTypes(value){
+        const text = String(value || "").toLowerCase();
+        const buckets = [
+          { re: /火锅|涮|串串|羊蝎子|铜锅/, code: "050117" },
+          { re: /咖啡|coffee|下午茶/, code: "050500" },
+          { re: /茶馆|茶艺|喝茶|茶室/, code: "050600" },
+          { re: /甜品|糖水|冰淇淋|冷饮|奶茶|饮品/, code: "050700|050900" },
+          { re: /蛋糕|面包|烘焙|糕点|点心/, code: "050800" },
+          { re: /快餐|简餐|汉堡|炸鸡|麦当劳|肯德基|kfc|mcdonald/, code: "050300" },
+          { re: /西餐|牛排|披萨|意面|法餐|bistro|brunch|西式/, code: "050200" },
+          { re: /日料|日本|寿司|料理|刺身|烧鸟|居酒屋|拉面|韩餐|韩国|泰餐|越南|东南亚|印度|墨西哥/, code: "050200" },
+          { re: /川菜|湘菜|粤菜|云南|云贵|东北|本帮|江浙|北京菜|烤鱼|烧烤|烤肉|小龙虾|中餐|私房菜|家常菜/, code: "050100" }
+        ];
+        const matched = buckets.filter((bucket)=>bucket.re.test(text)).flatMap((bucket)=>bucket.code.split("|"));
+        return uniqueKeywords(matched).slice(0, 4).join("|") || "050000";
+      }
+      function inferRestaurantSearchRadius(choice = getChoiceContext(), { hasDestination = false, participantCount = 0 } = {}){
+        const text = `${choice.question || ""} ${(choice.tags || []).join(" ")}`;
+        if(participantCount >= 2) return 10000;
+        if(/跨区|远一点|折中|中间/.test(text)) return 8000;
+        if(hasDestination) return 3000;
+        if(/离我近|附近|就近|最近|少走|马上|现在/.test(text)) return 2000;
+        if(/约会|聚餐|请客|安静|环境|好吃|评分|不踩雷|推荐/.test(text)) return 5000;
+        return 3500;
+      }
+      function inferRestaurantSortRule(choice = getChoiceContext()){
+        const text = `${choice.question || ""} ${(choice.tags || []).join(" ")}`;
+        if(/离我近|附近|就近|最近|少走|马上|现在/.test(text)) return "distance";
+        if(/约会|聚餐|请客|安静|环境|好吃|评分|不踩雷|推荐|满意/.test(text)) return "weight";
+        return "distance";
+      }
+      function readPlanCost(value){
+        const cost = readCostValue(value);
+        return Number.isFinite(cost) && cost > 0 ? Math.round(cost) : Number.NaN;
+      }
+      function readPlanRating(value){
+        const rating = readCostValue(value);
+        return Number.isFinite(rating) && rating > 0 ? Math.max(0, Math.min(5, Number(rating.toFixed(1)))) : Number.NaN;
+      }
+      function readPlanHour(value){
+        const hour = readCostValue(value);
+        return Number.isFinite(hour) && hour >= 0 ? Math.max(0, Math.min(29, Math.round(hour))) : 0;
+      }
+      function normalizePlanSearchRequests(value, fallbackKeywords = [], defaults = {}){
+        const items = Array.isArray(value) ? value : [];
+        const requests = items.map((item, index)=>{
+          const keyword = cleanRestaurantKeyword(item?.keyword || item?.keywords || item?.query || item?.searchKeyword || item);
+          if(!keyword) return null;
+          const radius = Number(item?.radiusMeters || item?.radius || defaults.radiusMeters);
+          const inferredTypes = inferRestaurantAmapTypes(keyword);
+          const requestTypes = item?.types || item?.typeCodes || (inferredTypes !== "050000" ? inferredTypes : defaults.types);
+          return {
+            keyword,
+            types: normalizeAmapTypes(requestTypes),
+            radiusMeters: normalizeAmapRadius(radius, defaults.radiusMeters || 3500),
+            sortrule: normalizeAmapSortRule(item?.sortrule || item?.sortRule || defaults.sortrule),
+            region: cleanRestaurantKeyword(item?.region || defaults.region || ""),
+            cityLimit: Boolean((item?.cityLimit ?? item?.city_limit ?? defaults.cityLimit) && (item?.region || defaults.region)),
+            showFields: normalizeAmapShowFields(item?.showFields || item?.show_fields || defaults.showFields),
+            priority: Number.isFinite(Number(item?.priority)) ? Number(item.priority) : index + 1
+          };
+        }).filter(Boolean).sort((a,b)=>a.priority-b.priority).slice(0, 8);
+        if(requests.length) return requests;
+        const requestKeywords = normalizeRequestKeywords(fallbackKeywords, 6);
+        return (requestKeywords.length ? requestKeywords : [RESTAURANT_KEYWORD_FALLBACK]).map((keyword, index)=>({
+          keyword,
+          types: normalizeAmapTypes((inferRestaurantAmapTypes(keyword) !== "050000" ? inferRestaurantAmapTypes(keyword) : defaults.types)),
+          radiusMeters: normalizeAmapRadius(defaults.radiusMeters || 3500),
+          sortrule: normalizeAmapSortRule(defaults.sortrule),
+          region: cleanRestaurantKeyword(defaults.region || ""),
+          cityLimit: Boolean(defaults.cityLimit && defaults.region),
+          showFields: normalizeAmapShowFields(defaults.showFields),
+          priority: index + 1
+        }));
+      }
+      function normalizeRequestKeywords(value, limit = 6){
+        const list = Array.isArray(value) ? value : String(value || "").split(/[、,，;；/|\s]+/);
+        return uniqueKeywords(list.map(cleanRestaurantKeyword).filter(Boolean)).slice(0, limit);
+      }
+      function restaurantSearchOptions(searchPlan = {}){
+        return {
+          minCost: searchPlan.minCost || 0,
+          maxCost: searchPlan.maxCost || 0,
+          minRating: searchPlan.minRating || 0,
+          preferOpenLate: Boolean(searchPlan.preferOpenLate),
+          openAtHour: searchPlan.openAtHour || 0,
+          mustKeywords: normalizeSimpleKeywords(searchPlan.mustKeywords, 8),
+          avoidKeywords: normalizeSimpleKeywords(searchPlan.avoidKeywords, 8),
+          types: normalizeAmapTypes(searchPlan.types),
+          sortrule: normalizeAmapSortRule(searchPlan.sortrule),
+          region: cleanRestaurantKeyword(searchPlan.region || ""),
+          cityLimit: Boolean(searchPlan.cityLimit),
+          showFields: normalizeAmapShowFields(searchPlan.showFields),
+          searchRequests: normalizePlanSearchRequests(searchPlan.searchRequests, searchPlan.keywords, searchPlan)
+        };
+      }
+      function normalizeMatchText(value){
+        return String(value || "").toLowerCase().replace(/[\s·・.,，。'"“”‘’()（）\\-_/&＋+|]/g, "");
+      }
+      async function prepareVisualCards(cards){
+        renderLoadingDeck("正在加载食物图片", "确认 5 张餐厅图可展示后直接发牌。", { done: 0, total: 5 });
+        let done = 0;
+        const results = await Promise.all(cards.map(card=>
+          readyDisplayCard(card).then((readyCard)=>{ done+=1; renderLoadingDeck("正在加载食物图片", `第 ${done} 张已加载。`, { done, total: 5 }); return readyCard; }).catch((error)=>({ error }))
+        ));
+        if(results.some(item=>item.error)) return null;
+        return results;
+      }
+      async function readyDisplayCard(card){
+        if(card.image){
+          try{
+            await preloadImage(card.image);
+            return card;
+          }catch(err){
+            console.warn("Restaurant image unavailable", card.name, err);
+          }
+        }
+        if(card.fallbackImage){
+          await preloadImage(card.fallbackImage);
+          return { ...card, image: card.fallbackImage };
+        }
+        return card;
+      }
+      function preloadImage(url){
+        return new Promise((resolve,reject)=>{ const img=new Image(); const timer=setTimeout(()=>reject(new Error("图片加载超时")),25000); img.onload=()=>{ clearTimeout(timer); resolve(); }; img.onerror=()=>{ clearTimeout(timer); reject(new Error("图片加载失败")); }; img.src=url; });
+      }
+      async function searchRestaurantsWithFallback(coords, radius = 3500, keywords = [RESTAURANT_KEYWORD_FALLBACK], options = {}, meetup = null){
+        const broadKeywords = limitRestaurantKeywords([...(Array.isArray(keywords) ? keywords : [keywords]), RESTAURANT_KEYWORD_FALLBACK], 6);
+        const relaxedOptions = relaxedRestaurantSearchOptions(options);
+        let activeCoords = coords;
+        let pois = await trySearchNearbyRestaurants(activeCoords, radius, keywords, options, "primary", meetup);
+        if(pois.length < TOTAL) pois = uniquePois([...pois, ...await trySearchNearbyRestaurants(activeCoords, Math.max(radius, 8000), keywords, options, "wide-primary", meetup)]);
+        if(pois.length < TOTAL) pois = uniquePois([...pois, ...await trySearchNearbyRestaurants(activeCoords, Math.max(radius, 8000), broadKeywords, relaxedOptions, "relaxed", meetup)]);
+        if(pois.length < TOTAL){
+          const fallbackCoords = await getApproxPosition();
+          if(!sameRestaurantCoords(activeCoords, fallbackCoords)){
+            const fallbackPois = await trySearchNearbyRestaurants(fallbackCoords, 8000, broadKeywords, relaxedOptions, "city-fallback", null);
+            if(fallbackPois.length > pois.length && (!meetup || !pois.length)){
+              activeCoords = fallbackCoords;
+              pois = fallbackPois;
+            }else{
+              pois = uniquePois([...pois, ...fallbackPois]);
+            }
+          }
+        }
+        if(pois.length < TOTAL && !sameRestaurantCoords(activeCoords, DEFAULT_AMAP_CENTER)){
+          const defaultPois = await trySearchNearbyRestaurants(DEFAULT_AMAP_CENTER, 8000, broadKeywords, relaxedOptions, "default-fallback", null);
+          if(defaultPois.length > pois.length && (!meetup || !pois.length)){
+            activeCoords = DEFAULT_AMAP_CENTER;
+            pois = defaultPois;
+          }else{
+            pois = uniquePois([...pois, ...defaultPois]);
+          }
+        }
+        return { coords: activeCoords, pois: diverseRestaurantPois(rankRestaurantPoisForMeetup(pois, meetup), AMAP_PRICE_POOL_SIZE) };
+      }
+      async function trySearchNearbyRestaurants(coords, radius, keywords, options, label, meetup = null){
+        try{
+          return await searchNearbyRestaurants(coords, radius, keywords, options, meetup);
+        }catch(err){
+          console.warn("Restaurant search attempt failed", label, err);
+          return [];
+        }
+      }
+      function relaxedRestaurantSearchOptions(options = {}){
+        return { ...options, minCost: 0, maxCost: 0, minRating: 0, mustKeywords: [], avoidKeywords: [], region: "", cityLimit: false, types: "050000", sortrule: "distance", showFields: AMAP_SHOW_FIELDS_DEFAULT, searchRequests: [] };
+      }
+      function sameRestaurantCoords(a, b){
+        if(!a || !b) return false;
+        return Math.abs((Number(a.lat) || 0) - (Number(b.lat) || 0)) < 0.0005 && Math.abs((Number(a.lng) || 0) - (Number(b.lng) || 0)) < 0.0005;
+      }
+      function restaurantDistanceMeters(a, b){
+        const lat1 = Number(a?.lat), lng1 = Number(a?.lng), lat2 = Number(b?.lat), lng2 = Number(b?.lng);
+        if([lat1,lng1,lat2,lng2].some((value)=>!Number.isFinite(value))) return 999999;
+        const toRad = (value)=>value * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+        const rLat1 = toRad(lat1), rLat2 = toRad(lat2);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLng / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+      }
+      function rankRestaurantPoisForMeetup(pois, meetup){
+        if(!meetup?.participants?.length) return pois;
+        return (pois || []).map((poi)=>withRestaurantMeetupMetrics(poi, meetup)).sort(compareRestaurantCandidate);
+      }
+      function withRestaurantMeetupMetrics(poi, meetup){
+        if(!poi?.location || !meetup?.participants?.length) return poi;
+        const participantDistances = meetup.participants.map((participant)=>({
+          label: participant.label,
+          distance: Math.round(restaurantDistanceMeters(participant.location, poi.location))
+        })).filter((item)=>Number.isFinite(item.distance));
+        if(!participantDistances.length) return poi;
+        const distances = participantDistances.map((item)=>item.distance);
+        const maxDistance = Math.max(...distances);
+        const minDistance = Math.min(...distances);
+        const avgDistance = Math.round(distances.reduce((sum, value)=>sum + value, 0) / distances.length);
+        return { ...poi, meetup: { label: meetup.label, participantDistances, maxDistance, minDistance, avgDistance, imbalance: maxDistance - minDistance } };
+      }
+      async function searchNearbyRestaurants(coords, radius = 3500, keywords = [RESTAURANT_KEYWORD_FALLBACK], options = {}, meetup = null){
+        const center = coords.amap ? coords : await convertToAmap(coords);
+        const pois = [];
+        const searchRequests = restaurantAmapRequests(radius, keywords, options);
+        const hasEnoughCandidates = () => diverseRestaurantPois(preferredRestaurantPois(pois.map(normalizeAmapPoi), options), AMAP_PRICE_POOL_SIZE).length >= AMAP_PRICE_POOL_SIZE;
+        for(let requestIndex=0; requestIndex<searchRequests.length; requestIndex++){
+          const request = searchRequests[requestIndex];
+          for(let page=1; page<=AMAP_SEARCH_PAGES; page++){
+            const params = { key: AMAP_WEB_SERVICE_KEY, location: `${center.lng.toFixed(6)},${center.lat.toFixed(6)}`, radius: String(request.radiusMeters), types: request.types, keywords: request.keyword, sortrule: request.sortrule, page_size: String(AMAP_RESTAURANT_LIMIT), page_num: String(page), show_fields: request.showFields, output: "json" };
+            if(request.region) params.region = request.region;
+            if(request.cityLimit) params.city_limit = "true";
+            const data = await amapJsonp("https://restapi.amap.com/v5/place/around", params);
+            if(data.status !== "1") throw new Error(data.info || "高德附近餐厅查询失败");
+            const pagePois = data.pois || [];
+            pois.push(...pagePois.map((poi)=>({ ...poi, __searchKeyword: request.keyword })));
+            if(hasEnoughCandidates()) break;
+            if(pagePois.length < AMAP_RESTAURANT_LIMIT) break;
+          }
+          if(hasEnoughCandidates()) break;
+        }
+        return diverseRestaurantPois(rankRestaurantPoisForMeetup(preferredRestaurantPois(pois.map(normalizeAmapPoi), options), meetup), AMAP_PRICE_POOL_SIZE);
+      }
+      function restaurantAmapRequests(radius, keywords, options = {}){
+        const base = normalizePlanSearchRequests(options.searchRequests, keywords, { ...options, radiusMeters: radius });
+        return base.map((request)=>({
+          keyword: cleanRestaurantKeyword(request.keyword) || RESTAURANT_KEYWORD_FALLBACK,
+          types: normalizeAmapTypes(request.types || options.types),
+          radiusMeters: normalizeAmapRadius(request.radiusMeters || radius, 3500),
+          sortrule: normalizeAmapSortRule(request.sortrule || options.sortrule),
+          region: cleanRestaurantKeyword(request.region || options.region || ""),
+          cityLimit: Boolean((request.cityLimit ?? options.cityLimit) && (request.region || options.region)),
+          showFields: normalizeAmapShowFields(request.showFields || options.showFields)
+        }));
+      }
+      async function getApproxPosition(){
+        try{
+          const data = await amapJsonp("https://restapi.amap.com/v3/ip", { key: AMAP_WEB_SERVICE_KEY, output: "json" });
+          if(data.status === "1"){ const center = centerFromRectangle(data.rectangle); if(center){ const city = Array.isArray(data.city) ? data.city[0] : data.city; const province = Array.isArray(data.province) ? data.province[0] : data.province; const label = compactLocationParts([province, city]).join("") || city || province || "当前城市"; return { ...center, amap: true, label }; } }
+        }catch{}
+        return { ...DEFAULT_AMAP_CENTER };
+      }
+      async function resolveRestaurantDestinationContext(coords, searchPlan, choice = getChoiceContext()){
+        const hint = restaurantDestinationHint(searchPlan, choice);
+        if(!hint) return null;
+        const point = await geocodeRestaurantLocationHint(hint, coords);
+        if(!point) return null;
+        return {
+          strategy: "destination",
+          label: hint,
+          searchCoords: { ...point, label: `${hint}附近` },
+          radiusMeters: searchPlan?.radiusMeters || 3500
+        };
+      }
+      function restaurantDestinationHint(searchPlan = {}, choice = getChoiceContext()){
+        if(extractRestaurantParticipantTargetHints(choice).length >= 2) return "";
+        if(shouldUseCurrentLocationForMeetup(choice, restaurantParticipantLocationHints(searchPlan, choice))) return "";
+        const explicit = extractRestaurantDestinationHint(choice)?.name || "";
+        const hint = cleanRestaurantDestinationHint(searchPlan.locationHint || searchPlan.destinationHint || searchPlan.destination || searchPlan.area || searchPlan.landmark || "");
+        return explicit || hint;
+      }
+      async function resolveRestaurantMeetupContext(coords, searchPlan, choice = getChoiceContext()){
+        const hints = restaurantParticipantLocationHints(searchPlan, choice);
+        const currentPlusFriendMeetup = shouldUseCurrentLocationForMeetup(choice, hints);
+        if(hints.length < 2 && !currentPlusFriendMeetup) return null;
+        const participants = [];
+        if(currentPlusFriendMeetup && coords){
+          const userPoint = coords.amap ? coords : await convertToAmap(coords);
+          if(Number.isFinite(Number(userPoint?.lat)) && Number.isFinite(Number(userPoint?.lng))){
+            participants.push({ label: "你", location: { ...userPoint, amap: true, label: "你" } });
+          }
+        }
+        for(const hint of hints.slice(0, 4)){
+          const point = await geocodeRestaurantLocationHint(hint, coords);
+          if(point && !participants.some((item)=>sameRestaurantCoords(item.location, point))){
+            participants.push({ label: hint, location: point });
+          }
+        }
+        if(participants.length < 2) return null;
+        const searchCoords = midpointRestaurantCoords(participants.map((item)=>item.location));
+        const spread = maxRestaurantPairDistance(participants.map((item)=>item.location));
+        const radiusMeters = Math.round(Math.max(RESTAURANT_MEETUP_MIN_RADIUS, Math.min(RESTAURANT_MEETUP_MAX_RADIUS, spread * 0.32)));
+        return {
+          strategy: "midpoint",
+          label: participants.map((item)=>item.label).join(" / "),
+          participants,
+          searchCoords: { ...searchCoords, amap: true, label: `${participants.map((item)=>item.label).join(" / ")}折中点` },
+          radiusMeters,
+          spreadMeters: spread
+        };
+      }
+      function restaurantParticipantLocationHints(searchPlan = {}, choice = getChoiceContext()){
+        const targetHints = extractRestaurantParticipantTargetHints(choice);
+        if(targetHints.length >= 2) return targetHints;
+        return uniqueRestaurantLocationHints([
+          ...normalizeRestaurantLocationHints(searchPlan.locationHints || searchPlan.locations || searchPlan.participantLocations || searchPlan.meetingLocations),
+          ...extractedRestaurantParticipantLocationNames(choice)
+        ]);
+      }
+      function midpointRestaurantCoords(points){
+        const valid = (points || []).filter((point)=>Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng)));
+        const sum = valid.reduce((acc, point)=>({ lat: acc.lat + Number(point.lat), lng: acc.lng + Number(point.lng) }), { lat: 0, lng: 0 });
+        return { lat: sum.lat / valid.length, lng: sum.lng / valid.length };
+      }
+      function maxRestaurantPairDistance(points){
+        let max = 0;
+        for(let i=0; i<points.length; i++){
+          for(let j=i+1; j<points.length; j++) max = Math.max(max, restaurantDistanceMeters(points[i], points[j]));
+        }
+        return max;
+      }
+      async function geocodeRestaurantLocationHint(hint, coords){
+        const cleaned = cleanRestaurantLocationHint(hint);
+        if(!cleaned || /^(附近|周边|当前位置|当前城市)$/.test(cleaned)) return null;
+        const city = await restaurantGeocodeCity(coords);
+        const preferCity = city && !/(?:省|市)/.test(cleaned);
+        const attempts = preferCity ? [city, ""] : ["", city];
+        const shouldGeocodeFirst = isAdministrativeLocationHint(cleaned);
+        for(const attemptCity of attempts.filter((item, index, arr)=>index === arr.indexOf(item))){
+          const resolvers = shouldGeocodeFirst
+            ? [geocodeAmapAddressLocation, searchAmapPlaceLocation]
+            : [searchAmapPlaceLocation, geocodeAmapAddressLocation];
+          for(const resolver of resolvers){
+            const point = await resolver(cleaned, attemptCity);
+            if(point) return point;
+          }
+        }
+        return null;
+      }
+      function isAdministrativeLocationHint(value){
+        return /(?:省|自治区|市|区|县|镇|乡|街道)$/.test(String(value || "").trim());
+      }
+      async function geocodeAmapAddressLocation(cleaned, attemptCity){
+        try{
+          const params = { key: AMAP_WEB_SERVICE_KEY, address: cleaned, output: "json" };
+          if(attemptCity) params.city = attemptCity;
+          const data = await amapJsonp("https://restapi.amap.com/v3/geocode/geo", params);
+          const location = data.status === "1" && Array.isArray(data.geocodes) ? data.geocodes[0]?.location : "";
+          const [lng, lat] = String(location || "").split(",").map(Number);
+          if(Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng, amap: true, label: cleaned };
+        }catch(err){
+          console.warn("Amap location geocode unavailable", cleaned, attemptCity || "global", err);
+        }
+        return null;
+      }
+      async function searchAmapPlaceLocation(cleaned, attemptCity){
+        try{
+          const params = { key: AMAP_WEB_SERVICE_KEY, keywords: cleaned, page_size: "1", page_num: "1", show_fields: "business,navi", output: "json" };
+          if(attemptCity){
+            params.region = attemptCity;
+            params.city_limit = "true";
+          }
+          const data = await amapJsonp("https://restapi.amap.com/v5/place/text", params);
+          const poi = data.status === "1" && Array.isArray(data.pois) ? data.pois[0] : null;
+          const [lng, lat] = String(poi?.location || "").split(",").map(Number);
+          if(Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng, amap: true, label: poi.name || cleaned };
+        }catch(err){
+          console.warn("Amap place text unavailable", cleaned, attemptCity || "global", err);
+        }
+        return null;
+      }
+      async function restaurantGeocodeCity(coords){
+        const labeled = restaurantCityLabelFromText(coords?.label || "");
+        if(labeled) return labeled;
+        const lat = Number(coords?.lat), lng = Number(coords?.lng);
+        if(!Number.isFinite(lat) || !Number.isFinite(lng)) return "";
+        const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+        if(restaurantGeocodeCityCache.key === key && restaurantGeocodeCityCache.value) return restaurantGeocodeCityCache.value;
+        if(restaurantGeocodeCityCache.key === key && restaurantGeocodeCityCache.promise) return restaurantGeocodeCityCache.promise;
+        restaurantGeocodeCityCache = {
+          key,
+          value: "",
+          promise: reverseGeocodeCity(coords).then((city)=>{
+            restaurantGeocodeCityCache = { key, value: city, promise: null };
+            return city;
+          }).catch((err)=>{
+            console.warn("Amap city reverse geocode unavailable", err);
+            restaurantGeocodeCityCache = { key, value: "", promise: null };
+            return "";
+          })
+        };
+        return restaurantGeocodeCityCache.promise;
+      }
+      async function reverseGeocodeCity(coords){
+        const center = coords?.amap ? coords : await convertToAmap(coords);
+        const lat = Number(center?.lat), lng = Number(center?.lng);
+        if(!Number.isFinite(lat) || !Number.isFinite(lng)) return "";
+        const data = await amapJsonp("https://restapi.amap.com/v3/geocode/regeo", {
+          key: AMAP_WEB_SERVICE_KEY,
+          location: `${lng.toFixed(6)},${lat.toFixed(6)}`,
+          radius: "1000",
+          extensions: "base",
+          output: "json"
+        });
+        if(data.status !== "1") return "";
+        const component = data.regeocode?.addressComponent || {};
+        return restaurantCityLabelFromText(amapAddressText(component.city)) || restaurantCityLabelFromText(amapAddressText(component.province));
+      }
+      function restaurantCityLabelFromText(value){
+        const text = String(value || "").trim();
+        if(!text || /^(当前|附近|周边|GPS|正在)/.test(text)) return "";
+        const match = text.match(/([\u4e00-\u9fa5]{2,}(?:市|自治州|地区|盟))/u);
+        if(match) return match[1];
+        return /(?:市|自治州|地区|盟)$/.test(text) ? text : "";
+      }
+      async function resolveRestaurantSearchCoords(coords, searchPlan){
+        const hint = cleanRestaurantLocationHint(searchPlan?.locationHint || "");
+        if(!hint || /^(附近|周边|当前位置|当前城市)$/.test(hint)) return coords;
+        return await geocodeRestaurantLocationHint(hint, coords) || coords;
+      }
+      function centerFromRectangle(rectangle){
+        const points = String(rectangle || "").split(";"); if(points.length < 2) return null;
+        const [lng1,lat1] = points[0].split(",").map(Number); const [lng2,lat2] = points[1].split(",").map(Number);
+        if([lng1,lat1,lng2,lat2].some(v=>!Number.isFinite(v))) return null;
+        return { lng:(lng1+lng2)/2, lat:(lat1+lat2)/2 };
+      }
+      async function convertToAmap(coords){
+        try{
+          const data = await amapJsonp("https://restapi.amap.com/v3/assistant/coordinate/convert", { key: AMAP_WEB_SERVICE_KEY, locations: `${coords.lng.toFixed(6)},${coords.lat.toFixed(6)}`, coordsys: "gps", output: "json" });
+          if(data.status === "1" && data.locations){ const [lng,lat] = data.locations.split(";")[0].split(",").map(Number); if(Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng }; }
+        }catch{}
+        return coords;
+      }
+      function amapJsonp(endpoint, params){
+        return new Promise((resolve,reject)=>{
+          const cb = `__amap_cb_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+          const url = new URL(endpoint);
+          Object.entries(params).forEach(([k,v])=>{ if(v !== undefined && v !== null && v !== "") url.searchParams.set(k,v); });
+          url.searchParams.set("callback", cb);
+          const script = document.createElement("script");
+          let timer = null;
+          const cleanup = (done)=>{ clearTimeout(timer); delete window[cb]; script.remove(); done && done(); };
+          timer = setTimeout(()=>cleanup(()=>reject(new Error("高德接口超时"))),10000);
+          window[cb] = (data)=>cleanup(()=>resolve(data));
+          script.onerror = ()=>cleanup(()=>reject(new Error("高德接口加载失败")));
+          script.src = url.toString();
+          document.head.appendChild(script);
+        });
+      }
+      function normalizeAmapPoi(poi){
+        if(!poi || !poi.name) return null;
+        const photos = Array.isArray(poi.photos) ? poi.photos : [];
+        const image = selectAmapPoiPhotoUrl(photos);
+        const business = poi.business || {};
+        const [lng,lat] = String(poi.location || "").split(",").map(Number);
+        const navLocation = parseAmapLocation(poi.navi?.entr_location || poi.navi?.entrance_location || poi.entr_location);
+        const typeParts = String(poi.type || "").split(";");
+        return { id: poi.id || poi.name, name: poi.name, address: Array.isArray(poi.address) ? poi.address.join("") : (poi.address || ""), type: typeParts[typeParts.length-1] || typeParts[0] || "餐厅", typecode: poi.typecode || "", area: [poi.cityname, poi.adname].filter(Boolean).join(" "), businessArea: business.business_area || business.businessArea || "", tag: business.tag || poi.tag || "", opentimeToday: business.opentime_today || business.opentimeToday || "", opentimeWeek: business.opentime_week || business.opentimeWeek || "", distance: Number(poi.distance) || 0, rating: business.rating || "", cost: business.cost || "", image, searchKeyword: cleanRestaurantKeyword(poi.__searchKeyword || ""), location: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null, navLocation };
+      }
+      function parseAmapLocation(value){
+        const [lng, lat] = String(value || "").split(",").map(Number);
+        return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+      }
+      const AMAP_PHOTO_CATEGORY_SCORE = { food: 400, drink: 400, interior: 300, storefront: 200, unknown: 100 };
+      function selectAmapPoiPhotoUrl(photos){
+        return (Array.isArray(photos) ? photos : []).map((photo,index)=>{
+          const url = normalizeAmapPhotoUrl(photo?.url);
+          if(!url) return null;
+          const category = inferAmapPhotoCategory(photo, url);
+          const sourceBonus = url.includes("aos-comment.amap.com") ? 30 : 0;
+          return { url, score: (AMAP_PHOTO_CATEGORY_SCORE[category] || AMAP_PHOTO_CATEGORY_SCORE.unknown) + sourceBonus - index };
+        }).filter(Boolean).sort((a,b)=>b.score-a.score)[0]?.url || "";
+      }
+      function normalizeAmapPhotoUrl(url){
+        return String(url || "").replace(/^http:\/\//i, "https://");
+      }
+      function inferAmapPhotoCategory(photo, url){
+        const text = normalizeAmapPhotoText([photo?.category, photo?.type, photo?.imageCategory, photo?.tag, photo?.title].filter(Boolean).join(" "));
+        if(/(饮品|饮料|咖啡|茶|酒|果汁|奶茶|饮|drink|beverage|coffee|tea|wine|cocktail|beer)/i.test(text)) return "drink";
+        if(/(菜品|菜|餐|饭|面|粉|粥|锅|肉|鱼|虾|蟹|小吃|甜品|蛋糕|点心|烧烤|火锅|寿司|刺身|food|dish|meal|dessert|snack|hotpot|sushi|noodle|rice|bbq|grill|cake)/i.test(text)) return "food";
+        if(/(环境|室内|店内|装修|包厢|座位|大厅|餐桌|吧台|露台|interior|inside|indoor|dining|seat|table|bar)/i.test(text)) return "interior";
+        if(/(门头|招牌|门面|外观|入口|店门|门店|店铺|档口|柜台|storefront|facade|entrance|signboard|shopfront|counter)/i.test(text)) return "storefront";
+        const lowerUrl = url.toLowerCase();
+        if(lowerUrl.includes("aos-comment.amap.com")) return "food";
+        if(lowerUrl.includes("store.is.autonavi.com")) return "storefront";
+        return "unknown";
+      }
+      function normalizeAmapPhotoText(value){
+        return String(value || "").toLowerCase();
+      }
+      function filterRestaurantPois(pois, { minCost = 0, maxCost = 0, minRating = 0, mustKeywords = [], avoidKeywords = [] } = {}){
+        const must = normalizeSimpleKeywords(mustKeywords, 8).map(normalizeMatchText).filter(Boolean);
+        const avoid = normalizeSimpleKeywords(avoidKeywords, 8).map(normalizeMatchText).filter(Boolean);
+        return (pois || []).filter((poi)=>{
+          if(!poi?.name) return false;
+          if(minCost || maxCost){
+            const cost = readCostValue(poi.cost);
+            if(!Number.isFinite(cost)) return false;
+            if(minCost && cost < minCost) return false;
+            if(maxCost && cost > maxCost) return false;
+          }
+          if(minRating && readRatingValue(poi.rating) < minRating) return false;
+          if(must.length || avoid.length){
+            const text = normalizeMatchText([poi.name, poi.type, poi.typecode, poi.address, poi.area, poi.businessArea, poi.tag, poi.searchKeyword].join(" "));
+            if(must.length && !must.some((keyword)=>text.includes(keyword))) return false;
+            if(avoid.some((keyword)=>text.includes(keyword))) return false;
+          }
+          return true;
+        });
+      }
+      function preferredRestaurantPois(pois, options = {}){
+        const strict = filterRestaurantPois(pois, options);
+        if(strict.length >= TOTAL) return strict;
+        const relaxedMust = normalizeSimpleKeywords(options.mustKeywords, 8).length ? filterRestaurantPois(pois, { ...options, mustKeywords: [] }) : [];
+        if(uniquePois([...strict, ...relaxedMust]).length >= TOTAL) return uniquePois([...strict, ...relaxedMust]);
+        const relaxedCost = filterRestaurantPois(pois, relaxedRestaurantSearchOptions(options));
+        return uniquePois([...strict, ...relaxedMust, ...relaxedCost]);
+      }
+      function readCostValue(value){
+        const direct = Number(value);
+        if(Number.isFinite(direct)) return direct;
+        const match = String(value || "").match(/\d+(?:\.\d+)?/);
+        return match ? Number(match[0]) : Number.NaN;
+      }
+      function topPricePois(pois){
+        return diverseRestaurantPois(pois, AMAP_PRICE_POOL_SIZE);
+      }
+      function uniquePois(pois){
+        const seen = new Set();
+        return (pois || []).filter((poi)=>{
+          const key = String(poi?.id || poi?.name || "");
+          if(!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      function comparePoiCostDesc(a,b){
+        const costDiff = readCostValue(b?.cost) - readCostValue(a?.cost);
+        if(Number.isFinite(costDiff) && costDiff !== 0) return costDiff;
+        return (Number(a?.distance) || Infinity) - (Number(b?.distance) || Infinity);
+      }
+      function topRatingPois(pois){
+        return uniquePois(pois).filter(Boolean).sort(comparePoiRatingDesc);
+      }
+      function comparePoiRatingDesc(a,b){
+        const ratingDiff = readRatingValue(b?.rating) - readRatingValue(a?.rating);
+        if(Number.isFinite(ratingDiff) && ratingDiff !== 0) return ratingDiff;
+        return (Number(a?.distance) || Infinity) - (Number(b?.distance) || Infinity);
+      }
+      function readRatingValue(value){
+        const rating = Number(value);
+        return Number.isFinite(rating) ? rating : -1;
+      }
+      function diverseRestaurantPois(pois, limit = AMAP_PRICE_POOL_SIZE){
+        const sorted = uniquePois(pois).filter(Boolean).sort(compareRestaurantCandidate);
+        const buckets = new Map();
+        sorted.forEach((poi)=>{
+          const bucket = restaurantDiversityBucket(poi);
+          if(!buckets.has(bucket)) buckets.set(bucket, []);
+          buckets.get(bucket).push(poi);
+        });
+        const bucketEntries = Array.from(buckets.entries()).sort((a,b)=>restaurantCandidateScore(b[1][0]) - restaurantCandidateScore(a[1][0]));
+        const selected = [];
+        const usedIds = new Set();
+        const usedNames = new Set();
+        for(let pass=0; pass<2 && selected.length<limit; pass++){
+          let took = true;
+          while(took && selected.length<limit){
+            took = false;
+            for(const [,list] of bucketEntries){
+              const next = list.find((poi)=>{
+                const id = String(poi.id || poi.name || "");
+                if(!id || usedIds.has(id)) return false;
+                const nameKey = restaurantBrandKey(poi.name);
+                return pass > 0 || !nameKey || !usedNames.has(nameKey);
+              });
+              if(!next) continue;
+              selected.push(next);
+              usedIds.add(String(next.id || next.name));
+              const nameKey = restaurantBrandKey(next.name);
+              if(nameKey) usedNames.add(nameKey);
+              took = true;
+              if(selected.length >= limit) break;
+            }
+          }
+        }
+        if(selected.length < limit){
+          sorted.forEach((poi)=>{
+            const id = String(poi.id || poi.name || "");
+            if(id && !usedIds.has(id) && selected.length < limit){
+              selected.push(poi);
+              usedIds.add(id);
+            }
+          });
+        }
+        return selected.slice(0, limit);
+      }
+      function diverseRestaurantSample(pois, count){
+        return diverseRestaurantPois(randomPick(pois, Math.max(count * 4, count)), count);
+      }
+      function restaurantDiversityBucket(poi){
+        const text = `${poi?.searchKeyword || ""} ${poi?.name || ""} ${poi?.type || ""}`.toLowerCase();
+        if(/火锅|川|湘|辣|麻辣|串串|烤鱼/.test(text)) return "辣味";
+        if(/日料|日本|寿司|烧鸟|居酒屋|刺身|拉面/.test(text)) return "日料";
+        if(/西餐|牛排|bistro|法餐|意面|披萨|brunch|早午餐/i.test(text)) return "西餐";
+        if(/粤|港|茶餐|点心|本帮|江浙|中餐|私房/.test(text)) return "中餐";
+        if(/韩餐|韩国|烤肉/.test(text)) return "韩餐";
+        if(/泰|东南亚|越南/.test(text)) return "东南亚";
+        if(/海鲜|鱼|蟹|虾/.test(text)) return "海鲜";
+        if(/咖啡|甜品|蛋糕|酒吧|小酒馆/.test(text)) return "轻食酒咖";
+        return poi?.searchKeyword && poi.searchKeyword !== RESTAURANT_KEYWORD_FALLBACK ? `关键词:${poi.searchKeyword}` : String(poi?.type || "餐厅");
+      }
+      function restaurantBrandKey(name){
+        return normalizeMatchText(String(name || "").replace(/[（(].*?[）)]/g, "").replace(/·.*$/g, "")).slice(0, 12);
+      }
+      function compareRestaurantCandidate(a,b){
+        const scoreDiff = restaurantCandidateScore(b) - restaurantCandidateScore(a);
+        if(Math.abs(scoreDiff) > 0.01) return scoreDiff;
+        return comparePoiCostDesc(a,b);
+      }
+      function restaurantCandidateScore(poi){
+        const rating = Number(poi?.rating) || 0;
+        const cost = readCostValue(poi?.cost);
+        const distance = Number(poi?.distance) || 99999;
+        const costScore = Number.isFinite(cost) ? Math.min(cost, 500) / 35 : 0;
+        const distancePenalty = Math.min(distance, 8000) / 1200;
+        const meetupPenalty = poi?.meetup ? (Math.min(poi.meetup.maxDistance || 0, 18000) / 1800) + (Math.min(poi.meetup.imbalance || 0, 12000) / 3000) : 0;
+        return rating * 8 + costScore - distancePenalty - meetupPenalty;
+      }
+      function randomPick(items, count){
+        const arr = (items || []).filter(Boolean).slice();
+        for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+        return arr.slice(0, count);
+      }
+      function poisToCards(pois, options = {}){
+        const named = preferredRestaurantPois(pois, options);
+        return named.map((p,i)=>{ const fallbackImage = foodImageForPoi(p, i); return { emoji: foodEmojiForPoi(p), name: p.name, art: ACCENTS[i % ACCENTS.length], image: p.image || fallbackImage, fallbackImage, venueImage: p.image, reason: p.aiReason || poiReason(p, options), meta: restaurantPoiMeta(p, options), theme: INFO_THEMES[i % INFO_THEMES.length], navUrl: amapNavigationUrl(p), orderUrl: `https://www.amap.com/search?query=${encodeURIComponent(p.name)}` }; }).slice(0,5);
+      }
+      function restaurantPoiMeta(p, options = {}){
+        const distanceTags = restaurantDistanceTags(p, options);
+        const quality = p.rating ? `${p.rating}分` : "";
+        const priceOrType = p.cost ? `人均${formatCost(p.cost)}` : p.type;
+        return [...distanceTags, quality, priceOrType].filter(Boolean).slice(0,4);
+      }
+      function restaurantDistanceTags(p, options = {}){
+        const tags = [];
+        const target = restaurantTargetDistanceText(p, options);
+        const user = restaurantUserDistanceText(p, options);
+        if(target) tags.push(target);
+        if(user) tags.push(user);
+        if(p?.meetup?.maxDistance) tags.push(`最远${formatDistance(p.meetup.maxDistance)}`);
+        return tags;
+      }
+      function restaurantTargetDistanceText(p, options = {}){
+        if(!restaurantHasTarget(options)) return "";
+        const targetCoords = options.targetCoords || options.destination?.searchCoords || options.meetup?.searchCoords || options.searchCoords;
+        const distance = restaurantDistanceFromPoi(p, targetCoords) || Number(p?.distance) || 0;
+        const formatted = formatDistance(distance);
+        if(!formatted) return "";
+        return `距${restaurantTargetLabel(options)}${formatted}`;
+      }
+      function restaurantUserDistanceText(p, options = {}){
+        const distance = restaurantDistanceFromPoi(p, options.userCoords) || (!restaurantHasTarget(options) ? Number(p?.distance) || 0 : 0);
+        const formatted = formatDistance(distance);
+        return formatted ? `离你${formatted}` : "";
+      }
+      function restaurantDistanceFromPoi(p, coords){
+        if(!p?.location || !coords) return 0;
+        const distance = Math.round(restaurantDistanceMeters(coords, p.location));
+        return Number.isFinite(distance) && distance > 0 && distance < 999000 ? distance : 0;
+      }
+      function restaurantHasTarget(options = {}){
+        return Boolean(options.destination || options.meetup || options.targetCoords);
+      }
+      function restaurantTargetLabel(options = {}){
+        if(options.meetup) return "折中点";
+        const label = String(options.destination?.label || "目标").replace(/附近|周边|这边|那边/g, "").trim();
+        return (label || "目标").slice(0, 6);
+      }
+      function foodImageForPoi(p, index = 0){
+        const text = `${p?.name || ""} ${p?.type || ""} ${p?.address || ""}`.toLowerCase();
+        const bucket = FOOD_CARD_IMAGES.find((item)=>item.keywords.some((keyword)=>text.includes(keyword.toLowerCase()))) || FOOD_CARD_IMAGES[index % FOOD_CARD_IMAGES.length];
+        const seed = Math.abs(hashText(`${p?.id || p?.name || ""}:${index}`));
+        return bucket.urls[seed % bucket.urls.length];
+      }
+      function foodEmojiForPoi(p){
+        const text = `${p?.name || ""} ${p?.type || ""}`;
+        if(/寿司|日料|料理|刺身/.test(text)) return "🍣";
+        if(/牛排|西餐|bistro|法餐/i.test(text)) return "🥩";
+        if(/咖啡|甜品|蛋糕/.test(text)) return "🍰";
+        if(/酒|居酒屋|烧鸟/.test(text)) return "🍶";
+        if(/面|粉|拉面/.test(text)) return "🍜";
+        return "🍽️";
+      }
+      function hashText(value){
+        let hash = 0;
+        for(let i=0;i<String(value).length;i++) hash = ((hash << 5) - hash + String(value).charCodeAt(i)) | 0;
+        return hash;
+      }
+      function amapNavigationUrl(p){
+        const point = p.navLocation || p.location;
+        if(!point) return "";
+        return `https://uri.amap.com/navigation?to=${point.lng},${point.lat},${encodeURIComponent(p.name)}&mode=walk&policy=1&src=choiceover&coordinate=gaode&callnative=1`;
+      }
+      function cardNavigationUrl(card){
+        return card?.navUrl || card?.orderUrl || amapSearchUrl(card?.name);
+      }
+      function amapSearchUrl(name){
+        const keyword = String(name || "").trim();
+        return keyword ? `https://uri.amap.com/search?keyword=${encodeURIComponent(keyword)}&src=choiceover&coordinate=gaode&callnative=1` : "";
+      }
+      function poiReason(p, options = {}){
+        const distanceText = restaurantDistanceTags(p, options).slice(0, 2).join("，");
+        if(p?.meetup){
+          const detail = (p.meetup.participantDistances || []).slice(0, 3).map((item)=>`${item.label}${formatDistance(item.distance)}`).join("，");
+          const maxText = p.meetup.maxDistance ? `最远约${formatDistance(p.meetup.maxDistance)}` : "两边都不算太偏";
+          const core = [distanceText, detail || maxText].filter(Boolean).join("，");
+          return `${p.meetup.label}之间折中，${core}。先把见面成本压平，再看口味。`;
+        }
+        const rating = p.rating ? `评分 ${p.rating}` : "";
+        const cost = p.cost ? `人均 ${formatCost(p.cost)}` : "";
+        return [distanceText || "离你不远", rating, cost].filter(Boolean).join("，") + "。先按真实附近餐厅推进，少一点纠结。";
+      }
+      function formatDistance(value){ const d = Number(value); if(!Number.isFinite(d) || d <= 0) return ""; return d >= 1000 ? `${(d/1000).toFixed(d >= 3000 ? 0 : 1)}km` : `${Math.round(d)}m`; }
+      function formatCost(value){ const cost = readCostValue(value); if(Number.isFinite(cost) && cost > 0) return String(Math.round(cost)); return String(value || "").replace(/\.00$/, ""); }
+      function escapeHTML(value){ return String(value ?? "").replace(/[&<>"']/g, (ch)=>({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch])); }
+      function escapeAttr(value){ return escapeHTML(value); }
+      function cssUrl(value){ return String(value || "").replace(/['"\\\n\r]/g, (ch)=>encodeURIComponent(ch)); }
+      function openNavigationUrl(url){
+        const target = String(url || "").trim();
+        if(target) window.location.assign(target);
+      }
+      // 卡面“去导航”按钮：事件委托，避免与滑动冲突
+      $("#deck").addEventListener("pointerdown",(e)=>{ if(e.target.closest(".navMini")) e.stopPropagation(); });
+
+      startBgm();
+      if (location.hash === "#deck") startGame("AI 模式", "AI INTEL");
+      else if (location.hash === "#config") go("config");
+      else if (location.hash === "#game") { updatePill(); go("game"); }
+    </script>
+  </body>
+</html>
