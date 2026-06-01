@@ -266,7 +266,7 @@
       .stamp.s-l { left: 14px; color: #c79100; transform: rotate(-12deg); }
       .stamp.s-d { left: 50%; bottom: 16px; top: auto; transform: translateX(-50%); color: var(--red); }
 
-      /* 底部控制：红 Pass · 下水道(Bye bye) · 蓝 Pick；下水道直达屏幕底端，左右键略小 */
+      /* 底部控制：待定 · 丢掉 · 选它；下水道直达屏幕底端，左右键略小 */
       /* margin 负值抵消 .screen 的 14px/16px 内边距，让下水道贴住屏幕底边 */
       .deckControls { display: flex; align-items: flex-end; justify-content: center; gap: 12px; flex: none; margin: 2px -16px -14px; }
       .ctrlSide { flex: none; width: 82px; height: 54px; border: 3px solid var(--ink); border-radius: 14px; box-shadow: var(--shadow-sm); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; margin-bottom: 8px; transition: transform .08s, box-shadow .08s, filter .12s; }
@@ -430,9 +430,9 @@
             <div class="deck" id="deck"></div>
           </div>
           <div class="deckControls">
-            <button class="ctrlSide no" type="button" data-act data-dir="left" onclick="tapDecision('left')"><span class="big">Pass</span><span class="sm">左滑待定</span></button>
-            <button class="pipeBtn" id="pipe" type="button" data-act data-dir="down" onclick="tapDecision('down')"><div class="rim"><span class="plabel">Bye bye</span></div><div class="body"><div class="mouth"></div></div></button>
-            <button class="ctrlSide pick" type="button" data-act data-dir="right" onclick="tapDecision('right')"><span class="big">Pick</span><span class="sm">右滑就它</span></button>
+            <button class="ctrlSide no" type="button" data-act data-dir="left" onclick="tapDecision('left')"><span class="big">待定</span><span class="sm">左滑保留</span></button>
+            <button class="pipeBtn" id="pipe" type="button" data-act data-dir="down" onclick="tapDecision('down')"><div class="rim"><span class="plabel">丢掉</span></div><div class="body"><div class="mouth"></div></div></button>
+            <button class="ctrlSide pick" type="button" data-act data-dir="right" onclick="tapDecision('right')"><span class="big">选它</span><span class="sm">右滑确定</span></button>
           </div>
           <div class="toast" id="toast"></div>
         </section>
@@ -714,9 +714,9 @@
             <div class="metaRow">${(c.meta||[]).map(m=>`<span class="mtag">${escapeHTML(m)}</span>`).join("")}</div>
             ${nav}
           </div>` + (withStamps ? `
-          <div class="stamp s-r pixel">Pick</div>
-          <div class="stamp s-l pixel">Pass</div>
-          <div class="stamp s-d pixel">Bye bye</div>` : "");
+          <div class="stamp s-r pixel">选它</div>
+          <div class="stamp s-l pixel">待定</div>
+          <div class="stamp s-d pixel">丢掉</div>` : "");
       }
 
       function renderDeck(){
@@ -808,7 +808,7 @@
         if(dir==="left"){
           // No / 待定：本轮不再进入卡牌池，留作命运结算的候选（不会再转回来）
           card.classList.add("flyL");
-          setTimeout(()=>{ pending.push(deck.shift()); afterRemove("Pass · 待定 +1"); },280); return;
+          setTimeout(()=>{ pending.push(deck.shift()); afterRemove("已放入待定"); },280); return;
         }
         if(dir==="down"){
           // 扔进下水道：永久拉黑，不作为候选
@@ -818,7 +818,7 @@
           card.classList.add("intoPipe");
           requestAnimationFrame(()=>{ card.style.transform=`translate(${dx}px,${dy}px) scale(.18)`; });
           gulp();
-          setTimeout(()=>{ deck.shift(); afterRemove("Bye bye · 永久拉黑"); },520);
+          setTimeout(()=>{ deck.shift(); afterRemove("已丢掉"); },520);
         }
       }
 

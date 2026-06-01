@@ -579,6 +579,13 @@ textarea.field.bigInput {
   border: 0;
 }
 
+.ctrlSide .big,
+.pipeBtn .plabel {
+  font-family: inherit;
+  letter-spacing: 0;
+  font-weight: 850;
+}
+
 .ctrlSide.no {
   background: #f4eeee;
   color: #9a4038;
