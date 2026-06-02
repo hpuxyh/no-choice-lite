@@ -355,7 +355,7 @@
               <select class="field sel" id="mbti"><option value="">未选</option><option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option><option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option><option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option><option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option></select>
             </div>
             <div class="pRow"><label>其他</label>
-              <div class="voiceRow" style="flex:1"><input class="field" id="custom" placeholder="生日 / 口味 / 忌口…（可语音）" /><button class="micBtn" type="button" onclick="startVoice('custom', this)">🎤</button></div>
+              <div class="voiceRow" style="flex:1"><input class="field" id="custom" placeholder="生日 / 口味 / 忌口…（可语音）" /><button class="micBtn" type="button" data-voice-target="custom" aria-label="语音输入其他偏好">🎤</button></div>
             </div>
           </div>
           <input type="file" id="photo" accept="image/*" hidden />
@@ -370,7 +370,7 @@
             <div class="locationStatus" id="locationStatus" data-state="loading"><span>定位：正在获取当前城市…</span></div>
             <div class="voiceBox">
               <div class="inputActions inputActionsTop">
-                <button class="micBig voicePrimary" id="micChoice" type="button" onclick="startVoice('choiceInput', this)">🎤 按住说出纠结</button>
+                <button class="micBig voicePrimary" id="micChoice" type="button" data-voice-target="choiceInput">🎤 按住说出纠结</button>
               </div>
               <div class="voiceInsight" id="voiceInsight" hidden>
                 <div class="voiceInsightRow"><span class="voiceInsightLabel">识别原文</span><span class="voiceInsightValue wrap" id="voiceTranscriptText"></span></div>
@@ -980,15 +980,19 @@
       function finishConfig() { applyName(); updatePill(); go("game"); }
 
       // 语音输入（Web Speech API；不支持则提示打字）
-      let recog = null, recBtn = null, voiceInsightSeq = 0;
+      let recog = null, recBtn = null, recTargetId = "", voiceInsightSeq = 0;
+      function stopVoice(){
+        if(!recog) return;
+        try { recog.stop(); } catch {}
+      }
       function startVoice(targetId, btn) {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) { toast("此浏览器不支持语音，可直接打字"); return; }
-        if (recog) { recog.stop(); return; }
+        if (recog) { stopVoice(); return; }
         const t = document.getElementById(targetId); const base = t.value;
         let latestVoiceText = "";
         let voiceHadError = false;
-        recog = new SR(); recBtn = btn; recog.lang = "zh-CN"; recog.interimResults = true; recog.continuous = false;
+        recog = new SR(); recBtn = btn; recTargetId = targetId; recog.lang = "zh-CN"; recog.interimResults = true; recog.continuous = false;
         btn.classList.add("rec"); toast("请说话…");
         recog.onresult = (e) => {
           let s = "";
@@ -999,12 +1003,55 @@
         };
         recog.onend = () => {
           if (recBtn) recBtn.classList.remove("rec");
-          recog = null;
+          recog = null; recBtn = null; recTargetId = "";
           if(!voiceHadError && targetId === "choiceInput" && latestVoiceText) renderVoiceRestaurantIntent(latestVoiceText);
         };
-        recog.onerror = () => { voiceHadError = true; if (recBtn) recBtn.classList.remove("rec"); recog = null; toast("没听清，再试一次"); };
-        recog.start();
+        recog.onerror = (event) => {
+          voiceHadError = true;
+          if (recBtn) recBtn.classList.remove("rec");
+          recog = null; recBtn = null; recTargetId = "";
+          const error = event?.error || "";
+          toast(error === "not-allowed" ? "请允许麦克风权限" : "没听清，再试一次");
+        };
+        try { recog.start(); }
+        catch(err) {
+          console.warn("Speech recognition start failed", err);
+          if (recBtn) recBtn.classList.remove("rec");
+          recog = null; recBtn = null; recTargetId = "";
+          toast("语音启动失败，可直接打字");
+        }
       }
+      function bindVoiceButtons(){
+        document.querySelectorAll("[data-voice-target]").forEach((btn)=>{
+          const targetId = btn.dataset.voiceTarget;
+          let holding = false;
+          let suppressClickUntil = 0;
+          btn.addEventListener("pointerdown", (event)=>{
+            if(event.pointerType === "mouse") return;
+            event.preventDefault();
+            try { btn.setPointerCapture(event.pointerId); } catch {}
+            holding = true;
+            suppressClickUntil = Date.now() + 700;
+            startVoice(targetId, btn);
+          }, { passive: false });
+          ["pointerup", "pointercancel", "lostpointercapture"].forEach((type)=>{
+            btn.addEventListener(type, (event)=>{
+              if(!holding) return;
+              event.preventDefault();
+              holding = false;
+              if(recTargetId === targetId) stopVoice();
+            }, { passive: false });
+          });
+          btn.addEventListener("click", (event)=>{
+            if(Date.now() < suppressClickUntil){
+              event.preventDefault();
+              return;
+            }
+            startVoice(targetId, btn);
+          });
+        });
+      }
+      bindVoiceButtons();
 
       function resetVoiceInsight(){
         voiceInsightSeq++;

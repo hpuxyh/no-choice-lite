@@ -352,6 +352,13 @@ body {
   color: #fff;
 }
 
+.micBig,
+.micBtn {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .quickTags {
   gap: 8px;
   padding-top: 2px;
