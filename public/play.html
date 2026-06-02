@@ -369,8 +369,10 @@
             <div class="lead" style="font-size:23px; text-align:center; line-height:1.25">选择难？<br />开一局就有答案！</div>
             <div class="locationStatus" id="locationStatus" data-state="loading"><span>定位：正在获取当前城市…</span></div>
             <div class="voiceBox">
-              <div class="inputActions inputActionsTop">
-                <button class="micBig voicePrimary" id="micChoice" type="button" data-voice-target="choiceInput">🎤 点击或按住说话</button>
+              <div class="voiceHold" id="voiceHold">
+                <button class="micBig voicePrimary" id="micChoice" type="button" data-voice-target="choiceInput">按住说话</button>
+                <div class="voiceProgress" aria-hidden="true"><span id="voiceProgressFill"></span></div>
+                <div class="voiceHoldStatus" id="voiceHoldStatus">按住后开始识别，松开结束</div>
               </div>
               <div class="voiceInsight" id="voiceInsight" hidden>
                 <div class="voiceInsightRow"><span class="voiceInsightLabel">识别原文</span><span class="voiceInsightValue wrap" id="voiceTranscriptText"></span></div>
@@ -987,7 +989,8 @@
       }
 
       // 语音输入（Web Speech API；不支持则提示打字）
-      let recog = null, recBtn = null, recTargetId = "", voiceInsightSeq = 0;
+      const MAX_VOICE_MS = 15000;
+      let recog = null, recBtn = null, recTargetId = "", voiceInsightSeq = 0, voiceStartedAt = 0, voiceProgressFrame = 0;
       function pauseBgmForVoice(){
         const audio = $("#bgm");
         if(!audio || audio.paused) return;
@@ -998,6 +1001,43 @@
         if(!recog) return;
         try { recog.stop(); } catch {}
       }
+      function setVoiceProgress(percent = 0){
+        const fill = $("#voiceProgressFill");
+        if(fill) fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+      }
+      function setVoiceHoldStatus(text){
+        const el = $("#voiceHoldStatus");
+        if(el) el.textContent = text;
+      }
+      function setVoiceHolding(btn, active){
+        const hold = btn?.closest?.(".voiceHold");
+        if(hold) hold.classList.toggle("holding", !!active);
+        if(btn) btn.classList.toggle("rec", !!active);
+        if(btn?.id === "micChoice") btn.textContent = active ? "松开结束" : "按住说话";
+      }
+      function startVoiceProgress(){
+        cancelAnimationFrame(voiceProgressFrame);
+        const tick = ()=>{
+          if(!recog || !voiceStartedAt) return;
+          const elapsed = Date.now() - voiceStartedAt;
+          setVoiceProgress((elapsed / MAX_VOICE_MS) * 100);
+          setVoiceHoldStatus(`正在听你说话 ${Math.max(1, Math.ceil(elapsed / 1000))}s`);
+          if(elapsed >= MAX_VOICE_MS){
+            stopVoice();
+            return;
+          }
+          voiceProgressFrame = requestAnimationFrame(tick);
+        };
+        tick();
+      }
+      function resetVoiceHoldUI(btn = recBtn){
+        cancelAnimationFrame(voiceProgressFrame);
+        voiceProgressFrame = 0;
+        voiceStartedAt = 0;
+        setVoiceProgress(0);
+        setVoiceHolding(btn, false);
+        setVoiceHoldStatus("按住后开始识别，松开结束");
+      }
       function startVoice(targetId, btn) {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) { toast("此浏览器不支持语音，可直接打字"); return; }
@@ -1007,7 +1047,11 @@
         let latestVoiceText = "";
         let voiceHadError = false;
         recog = new SR(); recBtn = btn; recTargetId = targetId; recog.lang = "zh-CN"; recog.interimResults = true; recog.continuous = false;
-        btn.classList.add("rec"); toast("请说话…");
+        voiceStartedAt = Date.now();
+        setVoiceHolding(btn, true);
+        setVoiceProgress(0);
+        setVoiceHoldStatus("正在听你说话 1s");
+        startVoiceProgress();
         recog.onresult = (e) => {
           let s = "";
           for (const r of e.results) s += r[0].transcript;
@@ -1016,13 +1060,13 @@
           if(targetId === "choiceInput") invalidateRestaurantIntent({ keepVoiceInsight: true });
         };
         recog.onend = () => {
-          if (recBtn) recBtn.classList.remove("rec");
+          resetVoiceHoldUI(recBtn);
           recog = null; recBtn = null; recTargetId = "";
           if(!voiceHadError && targetId === "choiceInput" && latestVoiceText) renderVoiceRestaurantIntent(latestVoiceText);
         };
         recog.onerror = (event) => {
           voiceHadError = true;
-          if (recBtn) recBtn.classList.remove("rec");
+          resetVoiceHoldUI(recBtn);
           recog = null; recBtn = null; recTargetId = "";
           const error = event?.error || "";
           toast(error === "not-allowed" ? "请允许麦克风权限" : "没听清，再试一次");
@@ -1030,7 +1074,7 @@
         try { recog.start(); }
         catch(err) {
           console.warn("Speech recognition start failed", err);
-          if (recBtn) recBtn.classList.remove("rec");
+          resetVoiceHoldUI(recBtn);
           recog = null; recBtn = null; recTargetId = "";
           toast("语音启动失败，可直接打字");
         }
@@ -1040,14 +1084,11 @@
           const targetId = btn.dataset.voiceTarget;
           let holding = false;
           let touchStartedAt = 0;
-          let suppressClickUntil = 0;
           btn.addEventListener("pointerdown", (event)=>{
-            if(event.pointerType === "mouse") return;
             event.preventDefault();
             try { btn.setPointerCapture(event.pointerId); } catch {}
             holding = true;
             touchStartedAt = Date.now();
-            suppressClickUntil = Date.now() + 700;
             if(recog && recTargetId === targetId) {
               stopVoice();
               return;
@@ -1060,15 +1101,12 @@
               event.preventDefault();
               holding = false;
               const heldMs = Date.now() - touchStartedAt;
-              if(heldMs >= 650 && recTargetId === targetId) stopVoice();
+              if(recTargetId === targetId) stopVoice();
+              if(heldMs < 250) toast("请按住说话");
             }, { passive: false });
           });
           btn.addEventListener("click", (event)=>{
-            if(Date.now() < suppressClickUntil){
-              event.preventDefault();
-              return;
-            }
-            startVoice(targetId, btn);
+            event.preventDefault();
           });
         });
       }

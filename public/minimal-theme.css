@@ -349,25 +349,67 @@ body {
   display: none;
 }
 
-.inputActionsTop .micBig {
-  min-height: 58px;
-  border-radius: 14px;
-  font-size: 16px;
-  background: var(--ink);
-  color: #fff;
-  box-shadow: none;
-}
-
-.voicePrimary {
-  background: #202322;
-  color: #fff;
-}
-
 .micBig,
 .micBtn {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.voiceHold {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputActionsTop {
+  display: none;
+}
+
+.voiceHold .micBig {
+  min-height: 58px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: #f6f8f6;
+  color: var(--ink);
+  box-shadow: inset 0 -1px 0 rgba(35, 51, 43, 0.04), 0 6px 18px rgba(35, 51, 43, 0.05);
+  font-size: 17px;
+  font-weight: 850;
+  letter-spacing: 0;
+  transition: transform 0.08s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.voiceHold.holding .micBig {
+  background: #dfe5e1;
+  box-shadow: inset 0 2px 8px rgba(35, 51, 43, 0.12);
+  transform: scale(0.985);
+}
+
+.voiceHoldStatus {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 720;
+  text-align: center;
+}
+
+.voiceProgress {
+  height: 5px;
+  border-radius: 999px;
+  background: #edf1ee;
+  overflow: hidden;
+}
+
+.voiceProgress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #2fa378;
+  transition: width 0.08s linear;
+}
+
+.voiceHold.holding .voiceHoldStatus {
+  color: var(--soft-ink);
 }
 
 .quickTags {
