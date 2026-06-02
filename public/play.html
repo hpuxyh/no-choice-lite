@@ -327,7 +327,7 @@
           <div class="sub">把“你定 / 我随便”变成一个清楚答案。<br />你的专属决策助手。</div>
           <div class="slogan">「让日常选择轻一点。」</div>
           <div class="chipwrap homeChips"><span class="chip on">🍜 今晚吃什么</span><span class="chip">🗺️ 周末去哪</span><span class="chip">🎁 送礼物</span></div>
-          <button class="btn red" onclick="go('config')">开始决策</button>
+          <button class="btn red" onclick="startFromHome()">开始决策</button>
         </section>
 
         <!-- 2) CONFIG -->
@@ -978,6 +978,12 @@
       }
       function skipConfig() { if (!photoData && !avatarSrc) playerEmoji = CUTE[Math.floor(Math.random() * CUTE.length)]; applyName(); updatePill(); toast("已用随机像素形象"); go("game"); }
       function finishConfig() { applyName(); updatePill(); go("game"); }
+      function startFromHome() {
+        if (!photoData && !avatarSrc) playerEmoji = CUTE[Math.floor(Math.random() * CUTE.length)];
+        applyName();
+        updatePill();
+        go("game");
+      }
 
       // 语音输入（Web Speech API；不支持则提示打字）
       let recog = null, recBtn = null, recTargetId = "", voiceInsightSeq = 0;
