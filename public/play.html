@@ -370,7 +370,7 @@
             <div class="locationStatus" id="locationStatus" data-state="loading"><span>定位：正在获取当前城市…</span></div>
             <div class="voiceBox">
               <div class="inputActions inputActionsTop">
-                <button class="micBig voicePrimary" id="micChoice" type="button" data-voice-target="choiceInput">🎤 按住说出纠结</button>
+                <button class="micBig voicePrimary" id="micChoice" type="button" data-voice-target="choiceInput">🎤 点击或按住说话</button>
               </div>
               <div class="voiceInsight" id="voiceInsight" hidden>
                 <div class="voiceInsightRow"><span class="voiceInsightLabel">识别原文</span><span class="voiceInsightValue wrap" id="voiceTranscriptText"></span></div>
@@ -623,7 +623,8 @@
       function installBgmUnlock(){
         if(bgmUnlockInstalled) return;
         bgmUnlockInstalled = true;
-        const unlock = ()=>{
+        const unlock = (event)=>{
+          if(event?.target?.closest?.("[data-voice-target]")) return;
           playBgm().then((ok)=>{
             if(!ok) return;
             ["pointerdown","touchstart","click","keydown"].forEach(type=>document.removeEventListener(type, unlock, true));
@@ -987,6 +988,12 @@
 
       // 语音输入（Web Speech API；不支持则提示打字）
       let recog = null, recBtn = null, recTargetId = "", voiceInsightSeq = 0;
+      function pauseBgmForVoice(){
+        const audio = $("#bgm");
+        if(!audio || audio.paused) return;
+        try { audio.pause(); } catch {}
+        setSoundGate("blocked", "🔊 开启音乐");
+      }
       function stopVoice(){
         if(!recog) return;
         try { recog.stop(); } catch {}
@@ -995,6 +1002,7 @@
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) { toast("此浏览器不支持语音，可直接打字"); return; }
         if (recog) { stopVoice(); return; }
+        pauseBgmForVoice();
         const t = document.getElementById(targetId); const base = t.value;
         let latestVoiceText = "";
         let voiceHadError = false;
@@ -1031,13 +1039,19 @@
         document.querySelectorAll("[data-voice-target]").forEach((btn)=>{
           const targetId = btn.dataset.voiceTarget;
           let holding = false;
+          let touchStartedAt = 0;
           let suppressClickUntil = 0;
           btn.addEventListener("pointerdown", (event)=>{
             if(event.pointerType === "mouse") return;
             event.preventDefault();
             try { btn.setPointerCapture(event.pointerId); } catch {}
             holding = true;
+            touchStartedAt = Date.now();
             suppressClickUntil = Date.now() + 700;
+            if(recog && recTargetId === targetId) {
+              stopVoice();
+              return;
+            }
             startVoice(targetId, btn);
           }, { passive: false });
           ["pointerup", "pointercancel", "lostpointercapture"].forEach((type)=>{
@@ -1045,7 +1059,8 @@
               if(!holding) return;
               event.preventDefault();
               holding = false;
-              if(recTargetId === targetId) stopVoice();
+              const heldMs = Date.now() - touchStartedAt;
+              if(heldMs >= 650 && recTargetId === targetId) stopVoice();
             }, { passive: false });
           });
           btn.addEventListener("click", (event)=>{
