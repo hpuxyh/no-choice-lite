@@ -1,12 +1,14 @@
 :root {
-  --paper: #f7f8f6;
-  --ink: #202322;
+  --paper: #f5f7f5;
+  --ink: #1d201f;
   --card: #ffffff;
-  --muted: #66706b;
-  --line: #dfe5df;
-  --line-strong: #cfd8d0;
-  --soft: #edf8f2;
-  --soft-ink: #1e614c;
+  --muted: #68716d;
+  --muted-2: #98a09b;
+  --line: #e0e6e1;
+  --line-strong: #cdd7d0;
+  --soft: #eef8f3;
+  --soft-ink: #23654f;
+  --fill: #f9fbf9;
   --red: #e85f52;
   --purple: #4f64d8;
   --yellow: #f3b84b;
@@ -17,7 +19,7 @@
 }
 
 body {
-  background: #eef2ee;
+  background: #eef3ef;
   background-image: none;
   color: var(--ink);
 }
@@ -36,14 +38,14 @@ body {
     width: 402px;
     height: min(832px, 100dvh - 24px);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    box-shadow: 0 22px 70px rgba(32, 35, 34, 0.16);
+    border-radius: 24px;
+    box-shadow: 0 24px 80px rgba(35, 51, 43, 0.13);
   }
 }
 
 .screen {
-  padding: 18px;
-  gap: 12px;
+  padding: 18px 20px;
+  gap: 14px;
 }
 
 .homeScreen,
@@ -92,16 +94,16 @@ body {
 }
 
 .topbar {
-  min-height: 34px;
+  min-height: 38px;
 }
 
 .badge {
-  padding: 6px 9px;
+  padding: 7px 10px;
   background: #fff;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 750;
-  box-shadow: 0 4px 14px rgba(32, 35, 34, 0.04);
+  font-weight: 760;
+  box-shadow: 0 6px 18px rgba(35, 51, 43, 0.05);
 }
 
 .badge.red,
@@ -133,6 +135,13 @@ body {
 .sub {
   font-weight: 600;
   line-height: 1.55;
+}
+
+.back {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 720;
+  padding: 8px 0 8px 12px;
 }
 
 .coin {
@@ -192,15 +201,15 @@ body {
 }
 
 .chip {
-  background: #fff;
+  background: var(--fill);
   color: var(--ink);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 720;
 }
 
 .chip.on {
-  background: #202322;
-  border-color: #202322;
+  background: var(--ink);
+  border-color: var(--ink);
   color: #fff;
 }
 
@@ -219,13 +228,13 @@ body {
   border-color: transparent;
   background: var(--ink);
   color: #fff;
-  border-radius: 10px;
+  border-radius: 13px;
   box-shadow: none;
   min-height: 50px;
 }
 
 .btn.alt {
-  background: var(--green);
+  background: #2fa378;
 }
 
 .btn.ghost {
@@ -320,11 +329,13 @@ body {
 }
 
 .locationStatus {
-  min-height: 52px;
+  min-height: 46px;
   max-height: none;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
   box-shadow: none;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .locationStatus[data-state="gps"] {
@@ -339,10 +350,10 @@ body {
 }
 
 .inputActionsTop .micBig {
-  min-height: 64px;
-  border-radius: 10px;
-  font-size: 17px;
-  background: #202322;
+  min-height: 58px;
+  border-radius: 14px;
+  font-size: 16px;
+  background: var(--ink);
   color: #fff;
   box-shadow: none;
 }
@@ -374,45 +385,104 @@ body {
 }
 
 .gameHero {
+  flex: none;
   gap: 12px;
+  padding-top: 2px;
 }
 
 .gameHero > .lead {
-  margin-top: 6px;
+  margin-top: 2px;
+  text-align: left !important;
+  font-size: 28px !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0;
 }
 
 .voiceBox {
+  flex: none;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(32, 35, 34, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(35, 51, 43, 0.07);
   padding: 10px;
+  gap: 10px;
 }
 
 textarea.field.bigInput {
-  border-radius: 10px;
-  background: #f8faf8;
+  height: clamp(118px, 18dvh, 156px);
+  min-height: clamp(118px, 18dvh, 156px);
+  border-radius: 14px;
+  background: var(--fill);
+  border-color: var(--line);
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 680;
 }
 
 .screen[data-screen="game"] > .btn {
   margin-top: auto;
+  min-height: 58px;
+  border-radius: 15px;
+  font-size: 17px;
+}
+
+.screen[data-screen="game"] .topbar {
+  margin-bottom: 4px;
+}
+
+.screen[data-screen="game"] .playerPill {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  box-shadow: 0 8px 24px rgba(35, 51, 43, 0.12);
+}
+
+.screen[data-screen="game"] .quickTagLabel {
+  width: 34px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.screen[data-screen="game"] .quickTagRow {
+  display: grid;
+  grid-template-columns: 34px repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.screen[data-screen="game"] .quickTagRow:last-child {
+  grid-template-columns: 34px repeat(3, minmax(0, 1fr));
+}
+
+.screen[data-screen="game"] .quickTagRow .chip {
+  min-height: 38px;
+  border-radius: 12px;
+  background: #fff;
+  border-color: var(--line);
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(35, 51, 43, 0.03);
+}
+
+.screen[data-screen="game"] .quickTagRow .chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
 }
 
 .modeScreen {
-  gap: 16px;
+  gap: 14px;
 }
 
 .modeList {
-  gap: 10px;
+  gap: 12px;
 }
 
 .mode {
   background: #fff;
   color: var(--ink);
-  padding: 15px 14px;
-  border-left-width: 4px;
-  border-radius: 14px;
-  box-shadow: 0 10px 26px rgba(32, 35, 34, 0.05);
+  padding: 16px 14px;
+  border-left-width: 0;
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(35, 51, 43, 0.07);
 }
 
 .mode.boss,
@@ -423,28 +493,45 @@ textarea.field.bigInput {
 }
 
 .mode.boss {
-  border-left-color: var(--red);
+  border-color: rgba(232, 95, 82, 0.28);
 }
 
 .mode.ai {
-  border-left-color: var(--blue);
+  border-color: rgba(61, 118, 216, 0.28);
 }
 
 .mode.myst {
-  border-left-color: var(--yellow);
+  border-color: rgba(243, 184, 75, 0.36);
 }
 
 .mode .ic {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #f8faf8;
-  font-size: 24px;
+  border-radius: 15px;
+  background: var(--fill);
+  font-size: 25px;
+}
+
+.mode.boss .ic {
+  background: #fff5f4;
+  border-color: rgba(232, 95, 82, 0.22);
+}
+
+.mode.ai .ic {
+  background: #f3f6ff;
+  border-color: rgba(61, 118, 216, 0.22);
+}
+
+.mode.myst .ic {
+  background: #fff8e8;
+  border-color: rgba(243, 184, 75, 0.28);
 }
 
 .mode .nm {
-  font-size: 17px;
+  font-size: 18px;
+  line-height: 1.15;
+  margin-bottom: 5px;
 }
 
 .mode .ds,
@@ -456,6 +543,14 @@ textarea.field.bigInput {
 .mode.ai .tagline,
 .mode.myst .tagline {
   color: var(--muted);
+}
+
+.mode .ds {
+  font-size: 13px;
+}
+
+.mode .tagline {
+  font-size: 11px;
 }
 
 .mode.sel {
@@ -474,18 +569,18 @@ textarea.field.bigInput {
 
 .skipZone {
   margin-top: auto;
-  padding: 18px 0 12px;
+  padding: 18px 0 8px;
 }
 
 .skipSmash {
-  width: min(230px, 72vw);
-  height: 62px;
+  width: min(230px, 74vw);
+  height: 58px;
   border: 0;
   border-radius: 999px;
   background: #fff;
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--line);
-  font-size: 20px;
+  box-shadow: inset 0 0 0 1px var(--line), 0 10px 28px rgba(35, 51, 43, 0.05);
+  font-size: 19px;
   text-shadow: none;
 }
 
